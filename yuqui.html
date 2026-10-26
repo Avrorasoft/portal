@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Avrora Soft - Vibola LLC">
+    <title>Pueblo Yuqui - Portal Amazonía</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <style>
+        :root { 
+            --accent-gold: #FFB81C;
+            --dark-bg: #121212; 
+            --panel-bg: #111111; 
+            --text-main: #E0E0E0; 
+            --vibrant-green: #1D9A4C;
+        }
+        
+        *, *::before, *::after { box-sizing: border-box; }
+        
+        body { font-family: 'Segoe UI', Roboto, sans-serif; margin: 0; padding: 0; background-color: var(--dark-bg); color: var(--text-main); scroll-behavior: smooth; }
+        
+        header { background: rgba(0,0,0,0.95); color: white; padding: 20px; text-align: center; border-bottom: 2px solid var(--accent-gold); width: 100%; position: fixed; top: 0; left: 0; z-index: 3000; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+        header h1 { font-size: 2.16rem; text-transform: uppercase; margin: 0; letter-spacing: 1px; }
+        
+        .sidebar { width: 250px; height: calc(100vh - 85px); position: fixed; top: 85px; left: 0; overflow-y: auto; border-right: 1px solid #333; padding-bottom: 50px; background: rgba(0,0,0,0.95); z-index: 1000; }
+        .sidebar a { display: block; padding: 15px 20px; color: #ddd; text-decoration: none; font-size: 16px; border-bottom: 1px solid #222; text-transform: uppercase; font-weight: bold; }
+        .sidebar a:hover, .sidebar a.activo { background: rgba(255,255,255,0.1); color: var(--accent-gold); border-left: 4px solid var(--accent-gold); }
+        
+        /* DISEÑO DE CENTRADO DE CONTENIDO EN PC */
+        .main-content { margin-left: 250px; padding: 120px 30px 30px 30px; width: calc(100% - 250px); }
+        .etnia-card { background: var(--panel-bg); padding: 30px; margin: 0 auto 40px auto; max-width: 900px; border-left: 4px solid var(--accent-gold); border: 1px solid #333; border-radius: 6px; }
+
+        /* MULTIMEDIA Y CARRUSEL CON EFECTO PIN */
+        .carrusel-container { position: relative; width: 100%; background: #080808; border-radius: 4px; overflow: hidden; border: 1px solid #333; margin-bottom: 25px; transition: all 0.3s ease; }
+        .carrusel-container.fijado { position: sticky; top: 100px; z-index: 2000; box-shadow: 0 15px 40px rgba(0,0,0,1); border-color: var(--accent-gold); }
+        
+        .btn-pin { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.7); color: white; border: 2px solid rgba(255,255,255,0.3); border-radius: 50%; width: 45px; height: 45px; font-size: 20px; cursor: pointer; z-index: 100; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .btn-pin:hover, .btn-pin.activo { background: var(--accent-gold); border-color: var(--accent-gold); }
+
+        .slide { display: none; width: 100%; animation: fade 0.5s; background: #080808; }
+        .slide img { width: 100%; height: 450px; object-fit: contain; background: #080808; display: block; }
+        @keyframes fade { from {opacity: .4} to {opacity: 1} }
+
+        .btn-nav-carrusel { cursor: pointer; position: absolute; top: 50%; width: auto; padding: 16px; margin-top: -22px; color: white; font-weight: bold; font-size: 24px; transition: 0.3s; border-radius: 0 3px 3px 0; user-select: none; background: rgba(0,0,0,0.5); border: none; }
+        .btn-nav-carrusel.next { right: 0; border-radius: 3px 0 0 3px; }
+        .btn-nav-carrusel:hover { background-color: var(--accent-gold); color: black; }
+
+        /* CONTENEDORES DE INFORMACIÓN EXTENSA (+35% FUENTE) */
+        .etnia-card h2 { font-size: 35px; color: white; text-transform: uppercase; margin-top: 0; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        h3 { color: var(--vibrant-green); font-size: 27px; margin-top: 35px; font-weight: 900; }
+        p { font-size: 21.6px; line-height: 1.7; color: #ccc; text-align: justify; margin-bottom: 20px; }
+        
+        .ficha-tecnica { background: #1a1a1a; padding: 25px; margin: 25px 0; border: 1px solid #333; border-radius: 4px; }
+        .ficha-tecnica ul { list-style: none; padding: 0; margin: 0; }
+        .ficha-tecnica li { font-size: 20px; margin-bottom: 12px; color: #E0E0E0; }
+        .ficha-tecnica strong { color: var(--accent-gold); }
+        
+        .btn-audio { background: transparent; color: var(--accent-gold); border: 1px solid var(--accent-gold); padding: 10px 20px; font-size: 16px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: all 0.3s; margin-bottom: 20px; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-audio:hover, .btn-audio.reproduciendo { background: var(--accent-gold); color: black; }
+
+        #mapa-etnia { width: 100%; height: 450px; background-color: #080808; border: 1px solid #333; border-radius: 4px; margin: 30px 0; z-index: 500; }
+
+        /* COMPONENTE INTERACTIVO DE REACCIONES Y COMENTARIOS */
+        .reacciones-bar { display: flex; gap: 10px; border-top: 1px solid #333; padding-top: 25px; margin-top: 40px; }
+        .btn-reaccion { background: transparent; border: 1px solid #444; color: #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s; padding: 12px; flex-grow: 1; }
+        .btn-reaccion:hover { background: rgba(255,255,255,0.1); border-color: var(--accent-gold); color: white; }
+        .btn-reaccion.activo { background: rgba(255,184,28,0.2); border-color: var(--accent-gold); color: var(--accent-gold); }
+        
+        .seccion-comentarios { margin-top: 40px; }
+        .seccion-comentarios h3 { font-size: 24px; color: var(--accent-gold); margin-bottom: 20px; margin-top: 0; }
+        .form-comentario { display: flex; flex-direction: column; gap: 15px; margin-bottom: 30px; }
+        .input-comentario { background: #161616; border: 1px solid #444; color: white; padding: 15px; border-radius: 8px; font-family: inherit; font-size: 18px; width: 100%; }
+        textarea.input-comentario { resize: vertical; }
+        .btn-enviar-comentario { align-self: flex-end; background: var(--vibrant-green); color: white; border: none; padding: 15px 30px; font-weight: bold; font-size: 16px; border-radius: 6px; cursor: pointer; transition: background 0.3s; }
+        .btn-enviar-comentario:hover { background: #147A3B; }
+        
+        .comentario-item { background: #1a1a1a; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid var(--accent-gold); border-top: 1px solid #222; border-right: 1px solid #222; border-bottom: 1px solid #222; }
+
+        /* MOSAICO MODAL RESPONSIVO PARA SMARTPHONES */
+        .btn-abrir-mosaico { display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--accent-gold); color: black; padding: 15px 30px; font-weight: 900; font-size: 14px; border-radius: 30px; border: none; z-index: 4000; box-shadow: 0 5px 20px rgba(0,0,0,0.9); cursor: pointer; text-transform: uppercase; white-space: nowrap; }
+        #modal-mosaico { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; overflow-y: auto; padding: 20px; backdrop-filter: blur(10px); }
+        .modal-mosaico-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; margin-top: 10px; }
+        .modal-mosaico-header h2 { color: var(--accent-gold); margin: 0; font-size: 20px; text-transform: uppercase; }
+        .btn-cerrar-mosaico { background: transparent; color: white; border: 2px solid #444; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .mosaico-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding-bottom: 100px; }
+        .mosaico-item { background: #111; color: #ddd; border: 1px solid #333; text-align: center; padding: 15px 5px; border-radius: 8px; text-decoration: none; font-size: 11px; text-transform: uppercase; font-weight: bold; display: flex; align-items: center; justify-content: center; min-height: 50px; }
+        .mosaico-item.activo { background: var(--accent-gold); color: black; border-color: var(--accent-gold); }
+
+        .footer-dev { margin-top: 50px; text-align: center; font-size: 1.2rem; color: #666; border-top: 1px solid #1a1a1a; padding: 20px; width: 100%; }
+        
+        @media (max-width: 768px) { 
+            .sidebar { display: none !important; }
+            .btn-abrir-mosaico { display: block; }
+            .main-content { margin-left: 0; padding: 100px 15px 15px 15px; width: 100%; } 
+            .etnia-card { margin: 0; padding: 15px; border: none; }
+            .slide img, #mapa-etnia { height: 300px; }
+            .carrusel-container.fijado { top: 75px; }
+            .mosaico-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <header><h1>Portal Amazonía</h1></header>
+    
+    <nav class="sidebar">
+        <a href="index.html" style="color:var(--accent-gold); font-weight:bold;">🏠 Volver al Inicio</a>
+        <a href='afroboliviano.html' id='nav-afroboliviano'>1. Afro</a>
+        <a href='araona.html' id='nav-araona'>2. Araona</a>
+        <a href='aymara.html' id='nav-aymara'>3. Aymara</a>
+        <a href='ayoreo.html' id='nav-ayoreo'>4. Ayoreo</a>
+        <a href='baure.html' id='nav-baure'>5. Baure</a>
+        <a href='canichana.html' id='nav-canichana'>6. Canichana</a>
+        <a href='cavineno.html' id='nav-cavineno'>7. Cavineño</a>
+        <a href='cayubaba.html' id='nav-cayubaba'>8. Cayubaba</a>
+        <a href='chacobo.html' id='nav-chacobo'>9. Chácobo</a>
+        <a href='chiman.html' id='nav-chiman'>10. Chimán</a>
+        <a href='chiquitano.html' id='nav-chiquitano'>11. Chiqui</a>
+        <a href='eseejja.html' id='nav-eseejja'>12. Ese Ejja</a>
+        <a href='guarani.html' id='nav-guarani'>13. Guaraní</a>
+        <a href='guarasugwe.html' id='nav-guarasugwe'>14. Guarasugwe</a>
+        <a href='guarayo.html' id='nav-guarayo'>15. Guarayo</a>
+        <a href='itonama.html' id='nav-itonama'>16. Itonama</a>
+        <a href='joaquiniano.html' id='nav-joaquiniano'>17. Joaquiniano</a>
+        <a href='lecos.html' id='nav-lecos'>18. Lecos</a>
+        <a href='machineri.html' id='nav-machineri'>19. Machineri</a>
+        <a href='maropa.html' id='nav-maropa'>20. Maropa</a>
+        <a href='more.html' id='nav-more'>21. Moré</a>
+        <a href='moseten.html' id='nav-moseten'>22. Mosetén</a>
+        <a href='movima.html' id='nav-movima'>23. Movima</a>
+        <a href='moxeno.html' id='nav-moxeno'>24. Moxeño</a>
+        <a href='nahua.html' id='nav-nahua'>25. Nahua</a>
+        <a href='pacahuara.html' id='nav-pacahuara'>26. Pacahuara</a>
+        <a href='quechua.html' id='nav-quechua'>27. Quechua</a>
+        <a href='siriono.html' id='nav-siriono'>28. Sirionó</a>
+        <a href='tacana.html' id='nav-tacana'>29. Tacana</a>
+        <a href='tapiete.html' id='nav-tapiete'>30. Tapiete</a>
+        <a href='toromona.html' id='nav-toromona'>31. Toromona</a>
+        <a href='uru.html' id='nav-uru'>32. Uru</a>
+        <a href='weenhayek.html' id='nav-weenhayek'>33. Weenhayek</a>
+        <a href='yaminahua.html' id='nav-yaminahua'>34. Yaminahua</a>
+        <a href='yuqui.html' id='nav-yuqui' class='activo'>35. Yuqui</a>
+        <a href='yuracare.html' id='nav-yuracare'>36. Yuracaré</a>
+        
+    </nav>
+
+    <button class="btn-abrir-mosaico" onclick="toggleMosaico(true)">📖 Ver las 36 Etnias</button>
+
+    <div id="modal-mosaico">
+        <div class="modal-mosaico-header">
+            <h2>Naciones Originarias</h2>
+            <button class="btn-cerrar-mosaico" onclick="toggleMosaico(false)">×</button>
+        </div>
+        <div class="mosaico-grid">
+            <a href='afroboliviano.html' class='mosaico-item' id='mos-afroboliviano'>Afro-Boliviano</a>
+            <a href='araona.html' class='mosaico-item' id='mos-araona'>Araona</a>
+            <a href='aymara.html' class='mosaico-item' id='mos-aymara'>Aymara</a>
+            <a href='ayoreo.html' class='mosaico-item' id='mos-ayoreo'>Ayoreo</a>
+            <a href='baure.html' class='mosaico-item' id='mos-baure'>Baure</a>
+            <a href='canichana.html' class='mosaico-item' id='mos-canichana'>Canichana</a>
+            <a href='cavineno.html' class='mosaico-item' id='mos-cavineno'>Cavineño</a>
+            <a href='cayubaba.html' class='mosaico-item' id='mos-cayubaba'>Cayubaba</a>
+            <a href='chacobo.html' class='mosaico-item' id='mos-chacobo'>Chácobo</a>
+            <a href='chiman.html' class='mosaico-item' id='mos-chiman'>Chimán</a>
+            <a href='chiquitano.html' class='mosaico-item' id='mos-chiquitano'>Chiquitano</a>
+            <a href='eseejja.html' class='mosaico-item' id='mos-eseejja'>Ese Ejja</a>
+            <a href='guarani.html' class='mosaico-item' id='mos-guarani'>Guaraní</a>
+            <a href='guarasugwe.html' class='mosaico-item' id='mos-guarasugwe'>Guarasugwe</a>
+            <a href='guarayo.html' class='mosaico-item' id='mos-guarayo'>Guarayo</a>
+            <a href='itonama.html' class='mosaico-item' id='mos-itonama'>Itonama</a>
+            <a href='joaquiniano.html' class='mosaico-item' id='mos-joaquiniano'>Joaquiniano</a>
+            <a href='lecos.html' class='mosaico-item' id='mos-lecos'>Lecos</a>
+            <a href='machineri.html' class='mosaico-item' id='mos-machineri'>Machineri</a>
+            <a href='maropa.html' class='mosaico-item' id='mos-maropa'>Maropa</a>
+            <a href='more.html' class='mosaico-item' id='mos-more'>Moré</a>
+            <a href='moseten.html' class='mosaico-item' id='mos-moseten'>Mosetén</a>
+            <a href='movima.html' class='mosaico-item' id='mos-movima'>Movima</a>
+            <a href='moxeno.html' class='mosaico-item' id='mos-moxeno'>Moxeño</a>
+            <a href='nahua.html' class='mosaico-item' id='mos-nahua'>Nahua</a>
+            <a href='pacahuara.html' class='mosaico-item' id='mos-pacahuara'>Pacahuara</a>
+            <a href='quechua.html' class='mosaico-item' id='mos-quechua'>Quechua</a>
+            <a href='siriono.html' class='mosaico-item' id='mos-siriono'>Sirionó</a>
+            <a href='tacana.html' class='mosaico-item' id='mos-tacana'>Tacana</a>
+            <a href='tapiete.html' class='mosaico-item' id='mos-tapiete'>Tapiete</a>
+            <a href='toromona.html' class='mosaico-item' id='mos-toromona'>Toromona</a>
+            <a href='uru.html' class='mosaico-item' id='mos-uru'>Uru</a>
+            <a href='weenhayek.html' class='mosaico-item' id='mos-weenhayek'>Weenhayek</a>
+            <a href='yaminahua.html' class='mosaico-item' id='mos-yaminahua'>Yaminahua</a>
+            <a href='yuqui.html' class='mosaico-item' id='mos-yuqui' class='activo'>Yuqui</a>
+            <a href='yuracare.html' class='mosaico-item' id='mos-yuracare'>Yuracaré</a>
+            
+        </div>
+    </div>
+
+    <main class="main-content">
+        <section class="etnia-card">
+            
+            <div id="album-fotos" class="carrusel-container">
+                <button id="btn-fijar" class="btn-pin" onclick="togglePin()">📌</button>
+                <div class='slide'><img src='images/yuqui1.jpg' alt='Fotografía Yuqui 1' loading='lazy'></div>
+                <div class='slide'><img src='images/yuqui2.jpg' alt='Fotografía Yuqui 2' loading='lazy'></div>
+                <div class='slide'><img src='images/yuqui3.jpg' alt='Fotografía Yuqui 3' loading='lazy'></div>
+                
+                <button class="btn-nav-carrusel prev" onclick="cambiarSlide(-1)">&#10094;</button>
+                <button class="btn-nav-carrusel next" onclick="cambiarSlide(1)">&#10095;</button>
+            </div>
+
+            <h2>Pueblo Yuqui</h2>
+            <button id="btn-audio-lector" class="btn-audio" onclick="toggleAudio()">🔊 Escuchar Artículo</button>
+
+            <div id="contenido-lectura">
+                <div class="ficha-tecnica"><ul><li><strong>Ubicación Geográfica:</strong> Departamento de Cochabamba (Provincia Carrasco).</li><li><strong>Ecosistema:</strong> Subtrópico amazónico.</li><li><strong>Familia Lingüística:</strong> Tupí-Guaraní.</li></ul></div>
+                <div id="mapa-etnia"></div>
+                <h3>Contexto Histórico</h3><p>Cazadores-recolectores nómadas obligados al sedentarismo por misiones de la 'Nueva Tribu' en la década de 1970. El choque fue traumático, causando altos índices de mortalidad por tuberculosis.</p><h3>Organización Social y Economía</h3><p>La agricultura a gran escala es ajena a su cultura. Se dedican a la artesanía de arcos, cestería, pesca y trabajo jornalero menor. Carecen de estructuras de liderazgo vertical históricas.</p><h3>Situación Actual</h3><p>Alta vulnerabilidad médica y exclusión social severa. Sus territorios han sido sistemáticamente ocupados (avasallados) por el avance de las plantaciones de coca dirigidas por sectores migrantes andinos.</p>
+            </div>
+
+            <div class="reacciones-bar">
+                <button id="btn-like" class="btn-reaccion" onclick="reaccionar('likes')">👍 Me Gusta (<span id="count-likes">0</span>)</button>
+                <button id="btn-sad" class="btn-reaccion" onclick="reaccionar('sads')">😢 Qué Tristeza (<span id="count-sads">0</span>)</button>
+            </div>
+
+            <div class="seccion-comentarios">
+                <h3>Comentarios de la Comunidad</h3>
+                <div class="form-comentario">
+                    <input type="text" id="comentario-nombre" class="input-comentario" placeholder="Tu nombre o pseudónimo...">
+                    <textarea id="comentario-texto" class="input-comentario" rows="3" placeholder="Escribe un comentario respetuoso..."></textarea>
+                    <button class="btn-enviar-comentario" onclick="publicarComentario()">Publicar Comentario</button>
+                </div>
+                <div id="lista-comentarios"></div>
+            </div>
+
+        </section>
+        
+        <div class="footer-dev">Desarrollado por <strong>Avrora Soft - Vibola LLC</strong> para <strong>Portal Amazonía</strong>.</div>
+    </main>
+
+    <script>
+        const DOC_ID_ETNIA = 'etnia_yuqui';
+
+        function toggleMosaico(mostrar) {
+            const modal = document.getElementById('modal-mosaico');
+            modal.style.display = mostrar ? 'block' : 'none';
+            document.body.style.overflow = mostrar ? 'hidden' : 'auto';
+        }
+
+        let slideIndex = 1;
+        mostrarSlides(slideIndex);
+        function cambiarSlide(n) { mostrarSlides(slideIndex += n); }
+        function mostrarSlides(n) {
+            let slides = document.getElementsByClassName("slide");
+            if (slides.length === 0) return;
+            if (n > slides.length) {slideIndex = 1}
+            if (n < 1) {slideIndex = slides.length}
+            for (let i = 0; i < slides.length; i++) { slides[i].style.display = "none"; }
+            slides[slideIndex-1].style.display = "block";
+        }
+
+        function togglePin() {
+            document.getElementById('album-fotos').classList.toggle('fijado');
+            document.getElementById('btn-fijar').classList.toggle('activo');
+        }
+
+        let reproduciendo = false;
+        const sintesis = window.speechSynthesis;
+        let mensaje = new SpeechSynthesisUtterance();
+        mensaje.text = document.getElementById('contenido-lectura').innerText;
+        mensaje.lang = 'es-BO'; 
+        
+        mensaje.onend = function() {
+            reproduciendo = false;
+            document.getElementById('btn-audio-lector').classList.remove('reproduciendo');
+            document.getElementById('btn-audio-lector').innerHTML = '🔊 Escuchar Artículo';
+        };
+
+        function toggleAudio() {
+            const btn = document.getElementById('btn-audio-lector');
+            if (reproduciendo) {
+                sintesis.cancel();
+                reproduciendo = false;
+                btn.classList.remove('reproduciendo');
+                btn.innerHTML = '🔊 Escuchar Artículo';
+            } else {
+                sintesis.speak(mensaje);
+                reproduciendo = true;
+                btn.classList.add('reproduciendo');
+                btn.innerHTML = '⏸️ Detener Lectura';
+            }
+        }
+        window.addEventListener('beforeunload', () => { sintesis.cancel(); });
+
+        /* CARTOGRAFÍA CON LÓGICA DE TRANSPARENCIA EN ZOOM PROGRESIVO */
+        const map = L.map('mapa-etnia').setView([-16.290, -63.588], 5);
+        const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
+        L.control.layers({"Modo Oscuro": darkLayer, "Satélite Real": satelliteLayer}).addTo(map);
+
+        const coords = [[-16.8, -64.8], [-16.4, -64.8], [-16.4, -64.3], [-16.8, -64.3]];
+        const colorEtnia = '#C0392B';
+        let poligono = null;
+
+        if (coords && coords.length > 0) {
+            poligono = L.polygon(coords, {
+                color: colorEtnia,
+                fillColor: colorEtnia,
+                fillOpacity: 0.4,
+                weight: 2
+            }).addTo(map);
+            map.fitBounds(poligono.getBounds(), { padding: [50, 50] });
+        }
+
+        /* ESCUCHADOR DE RE-RENDERIZACIÓN DE TRANSPARENCIA POR ACERCAMIENTO */
+        map.on('zoomend', function() {
+            if (poligono) {
+                if (map.getZoom() > 7) {
+                    poligono.setStyle({ fillOpacity: 0 });
+                } else {
+                    poligono.setStyle({ fillOpacity: 0.4 });
+                }
+            }
+        });
+
+        /* INFRAESTRUCTURA FIREBASE COMPLETA SIN RESÚMENES */
+        const firebaseConfig = {
+            apiKey: "AIzaSyBOwGbgEqRzFysi3mMnJUHolxNtyp0cMsI",
+            authDomain: "portal-ia-web.firebaseapp.com",
+            projectId: "portal-ia-web",
+            storageBucket: "portal-ia-web.firebasestorage.app",
+            messagingSenderId: "936426810042",
+            appId: "1:936426810042:web:6945cec92108c4aed03083",
+            measurementId: "G-6CFNPR19HG"
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.firestore();
+
+        let datosEtnia = { likes: 0, sads: 0, comentarios: [] };
+
+        db.collection("reacciones_etnias").doc(DOC_ID_ETNIA).onSnapshot((doc) => {
+            if (doc.exists) {
+                datosEtnia = doc.data();
+                document.getElementById('count-likes').innerText = datosEtnia.likes || 0;
+                document.getElementById('count-sads').innerText = datosEtnia.sads || 0;
+                renderizarComentarios(datosEtnia.comentarios || []);
+            }
+        });
+
+        const reaccionGuardada = localStorage.getItem(`reaccion_${DOC_ID_ETNIA}`);
+        if(reaccionGuardada === 'likes') document.getElementById('btn-like').classList.add('activo');
+        if(reaccionGuardada === 'sads') document.getElementById('btn-sad').classList.add('activo');
+
+        function reaccionar(tipo) {
+            const reaccionActual = localStorage.getItem(`reaccion_${DOC_ID_ETNIA}`);
+            const docRef = db.collection("reacciones_etnias").doc(DOC_ID_ETNIA);
+            
+            if (reaccionActual === tipo) {
+                let down = {}; down[tipo] = firebase.firestore.FieldValue.increment(-1);
+                docRef.update(down);
+                localStorage.removeItem(`reaccion_${DOC_ID_ETNIA}`);
+                document.getElementById(`btn-${tipo === 'likes' ? 'like' : 'sad'}`).classList.remove('activo');
+            } else {
+                let up = {}; up[tipo] = firebase.firestore.FieldValue.increment(1);
+                document.getElementById(`btn-${tipo === 'likes' ? 'like' : 'sad'}`).classList.add('activo');
+                
+                if (reaccionActual) {
+                    up[reaccionActual] = firebase.firestore.FieldValue.increment(-1);
+                    document.getElementById(`btn-${reaccionActual === 'likes' ? 'like' : 'sad'}`).classList.remove('activo');
+                }
+                docRef.set(up, { merge: true });
+                localStorage.setItem(`reaccion_${DOC_ID_ETNIA}`, tipo);
+            }
+        }
+
+        function publicarComentario() {
+            const nombre = document.getElementById('comentario-nombre').value.trim() || 'Anónimo';
+            const texto = document.getElementById('comentario-texto').value.trim();
+            if(texto === "") { alert("Por favor, escribe un comentario antes de publicar."); return; }
+
+            const fechaStr = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
+            const nuevoComentario = { nombre: nombre, texto: texto, fecha: fechaStr };
+
+            db.collection("reacciones_etnias").doc(DOC_ID_ETNIA).update({
+                comentarios: firebase.firestore.FieldValue.arrayUnion(nuevoComentario)
+            }).catch(() => {
+                db.collection("reacciones_etnias").doc(DOC_ID_ETNIA).set({
+                    comentarios: [nuevoComentario]
+                }, { merge: true });
+            });
+
+            document.getElementById('comentario-nombre').value = "";
+            document.getElementById('comentario-texto').value = "";
+        }
+
+        function renderizarComentarios(comentarios) {
+            const contenedor = document.getElementById('lista-comentarios');
+            contenedor.innerHTML = '';
+            if(!comentarios || comentarios.length === 0) {
+                contenedor.innerHTML = '<p style="color:#888; font-size:18px;">Sé el primero en comentar sobre este pueblo.</p>';
+                return;
+            }
+            [...comentarios].reverse().forEach(c => {
+                contenedor.innerHTML += `
+                    <div class="comentario-item">
+                        <div style="font-weight:bold; color:white; font-size:18px;">${c.nombre}</div>
+                        <div style="font-size:12px; color:#888; margin-bottom:10px;">${c.fecha}</div>
+                        <p style="margin:0; font-size: 19px; color:#ccc; line-height:1.5;">${c.texto}</p>
+                    </div>`;
+            });
+        }
+    </script>
+</body>
+</html>

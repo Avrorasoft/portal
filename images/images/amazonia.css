@@ -1,0 +1,614 @@
+@font-face {
+    font-family: 'poppin-regular';
+    src: url('../fonts/Poppins-Light.woff2') format('truetype');
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'poppin';
+    src: url('../fonts/Poppins-Regular.woff2') format('truetype');
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'poppin-bold';
+    src: url('../fonts/Poppins-Bold.woff2') format('truetype');
+    font-style: bold;
+}
+
+@font-face {
+    font-family: 'poppin-semibold';
+    src: url('../fonts/Poppins-SemiBold.woff2') format('truetype');
+    font-style: bold;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover{
+	text-decoration: none;
+}
+
+
+		.w3-sidebar {
+			z-index: 10;
+			width: 170px;
+			top: 0;
+			bottom: 0;
+			height: inherit;
+		}
+
+
+
+img.right
+{
+	width:100% !important;
+	max-width:600px !important;
+	height:auto !important;
+	border: 1px solid #ccc;
+	float: right;
+	margin-left: 15px;
+	padding: 5px;
+}
+
+img.left
+{
+	max-width: 600px !important;
+	width: 100% !important;
+	height:auto !important;
+	border: 1px solid #ccc;
+	float: left;
+	margin-right: 15px;
+	padding: 5px;
+}
+
+		
+		@media screen and (min-width: 980px) {
+
+
+			.titulo_pagina {
+				color: #ff4700;
+				font-family: 'poppin', sans-serif;
+				font-size: 26px;
+				font-weight: 700;
+			}
+
+			.titulo_principal {
+				font-family: 'poppin-bold', sans-serif;
+				color: #1c4d21;
+				font-size: 18px !important;
+				font-weight:900;
+				line-height: 38px;
+				text-align: left;
+				
+			}
+		
+			.subtitulo_principal {
+				font-family: 'poppin-semibold', sans-serif !important;;
+				color: #444444;
+				font-size: 33px !important;
+				line-height: 36px;
+				text-align: left;
+			}
+
+			.descripcion_principal {
+				font-family: 'poppin-regular', sans-serif;
+				color: #706f6f;
+				font-size: 22px;
+				line-height: 28px !important;
+				text-align: left;
+			}
+
+			.titulo_secundario {
+				font-family: 'poppin', sans-serif;
+				color: #1c4d21;
+				font-size: 16px;
+				font-weight: bold;
+				text-align: left;
+			}
+
+			.subtitulo_secundario {
+				font-family: 'poppin-semibold', sans-serif;
+				font-size: 18px;
+				line-height: 20px;
+				font-weight: bold;
+				text-align: left;
+			}
+
+			.descripcion {
+				font-family: 'poppin-regular', Geneva, Tahoma, sans-serif;
+				font-size: 18px !important;
+				line-height: 22px;
+				color: #3b3b3b;
+				text-align: left;
+			}
+
+		
+
+			.pagina_titulo {
+				color: #ff4700;
+				font-family: 'poppin', sans-serif;
+				font-size: 26px;
+				font-weight: 700;
+			}
+
+			.noticia_titulo {
+				font-family: 'poppin-bold', Geneva, Tahoma, sans-serif;
+				color: #1c4d21;
+				font-size: 20px;
+				line-height: 24px;
+				font-weight: bold;
+			}
+
+			.noticia_subtitulo {
+				font-family: 'poppin-semibold', Geneva, Tahoma, sans-serif;
+				color: #030000;
+				font-size: 30px;
+				line-height: 38px;
+				font-weight: bold;
+			}
+	
+			.noticia_completa {
+				font-family: 'poppin-regular', Geneva, Tahoma, sans-serif;
+				text-align: justify;
+				font-size: 20px;
+				line-height: 30px;
+			}
+
+			.noticia_fuente {
+				font-family: 'poppin', sans-serif;
+				color: #1c4d21;
+				font-size: 19px;
+				font-weight: bold;
+			}
+
+			.turismo_texto {
+				font-family: 'poppin', Geneva, Tahoma, sans-serif;
+				text-align: justify;
+				font-size: 18px;
+				line-height: 25px;
+			}
+
+			.galeria {
+				width: 100%;
+				height: 800px;
+    			background-color:#ffffff;
+			}
+
+		}
+
+		@media screen and (min-width: 601px) and (max-width: 979px) {
+		
+			.titulo_pagina {
+				font-family: 'poppin', sans-serif;
+				color: #ff4700;
+				font-size: 26px;
+				font-weight: 700;
+				text-align: left;
+			}
+
+			.titulo_principal {
+				font-family: 'poppin-bold', sans-serif;
+				color: #1c4d21;
+				font-size: 16px !important;
+				line-height: 38px;
+				text-align: left;
+				
+			}
+		
+			.subtitulo_principal {
+				font-family: 'poppin-semibold', sans-serif;
+				color: #444444;
+				font-size: 20px !important;
+				line-height: 28px;
+				text-align: left;
+			}
+
+			.descripcion_principal {
+				font-family: 'poppin-regular', sans-serif;
+				font-size: 16px;
+				line-height: 26px;
+				color: #555555;
+				text-align: left;
+			}
+
+			.titulo_secundario {
+				font-family: 'poppin-bold', sans-serif;
+				color: #1c4d21;
+				font-size: 16px;
+				text-align: left;
+			}
+
+			.subtitulo_secundario {
+				font-family: 'poppin-bold', sans-serif;
+				color: #000000;
+				font-size: 16px;
+				line-height: 18px;
+				text-align: left;
+			}
+
+			.descripcion {
+				font-family: 'poppin-regular', Geneva, Tahoma, sans-serif;
+				font-size: 16px !important;
+				line-height: 20px;
+				color: #3b3b3b;
+				text-align: left;
+			}
+
+			.noticia_titulo {
+				font-family: 'poppin-bold', Geneva, Tahoma, sans-serif;
+				color: #1c4d21;
+				font-size: 18px;
+				font-weight: bold;
+				text-align: left;
+			}
+
+			.noticia_subtitulo {
+				font-family: 'poppin-semibold', Geneva, Tahoma, sans-serif;
+				color: #030000;
+				font-size: 30px;
+				line-height: 38px;
+				font-weight: bold;
+				text-align: left;
+			}
+
+			.noticia_completa {
+				font-family: 'poppin-regular', Geneva, Tahoma, sans-serif;
+				font-size: 20px;
+				line-height: 28px;
+				text-align: left;
+			}
+
+		
+
+			.turismo_texto {
+				font-family: 'poppin', Geneva, Tahoma, sans-serif;
+				text-align: justify;
+				font-size: 18x;
+				line-height: 20px;
+			}
+				.galeria {
+				width: 100%;
+				height: 700px;
+    			background-color:#ffffff;
+			}
+
+		}
+
+
+		@media screen and (max-width: 600px) {
+		
+			.titulo_principal {
+				font-family: 'poppin-bold', sans-serif;
+				color: #1c4d21;
+				font-size: 18px !important;
+				line-height: 24px;
+			
+			}
+		
+			.subtitulo_principal {
+				font-family: 'poppin-bold', sans-serif;
+				color: #444444;
+				font-size: 20px !important;
+				line-height: 28px;
+				text-align: left;
+			}
+
+			.descripcion_principal {
+				font-family: 'poppin-regular', sans-serif;
+				font-size: 18px !important;
+				line-height: 22px !important;
+				color: #555555;
+				text-align: left;
+			}
+
+		
+
+			.titulo_secundario {
+				font-family: 'poppin-bold', sans-serif;
+				color: #1c4d21;
+				font-size: 14px;
+				text-align: left;
+			}
+
+			.subtitulo_secundario {
+				font-family: 'poppin-bold', sans-serif;
+				color: #444444;
+				font-size: 18px;
+				line-height: 22px;
+				text-align: left;
+			}
+
+			.descripcion {
+				font-family: 'poppin-regular', Geneva, Tahoma, sans-serif;
+				font-size: 17px !important;
+				line-height: 22px !important;
+				color: #3b3b3b;
+				text-align: left;
+			}
+
+			
+			.noticia_titulo {
+				font-family: 'poppin-bold', Geneva, Tahoma, sans-serif;
+				color: #1c4d21;
+				font-size: 18px;
+				font-weight: bold;
+				text-align: left;
+			}
+			
+			.noticia_subtitulo {
+				font-family: 'poppin-semibold', Geneva, Tahoma, sans-serif;
+				color: #030000;
+				font-size: 28px;
+				font-weight: bold;
+				text-align: left;
+			}
+	
+			
+
+			.noticia_completa {
+				font-family: 'poppin-regular', Geneva, Tahoma, sans-serif;
+				font-size: 17px;
+				line-height: 27px;
+				text-align: left;
+				}
+
+			.noticia_fuente {
+				color: #1c4d21;
+				font-family: sans-serif;
+				font-size: 19px;
+				font-weight: bold;
+				text-align: justify;
+			}
+
+			.turismo_texto {
+				font-family: 'poppin', Geneva, Tahoma, sans-serif;
+				text-align: justify;
+				font-size: 18px;
+				line-height: 26px;
+			}
+
+			.galeria {
+				width: 100%;
+				height: 600px;
+    			background-color:#ffffff;
+			}
+		}
+
+		#menu_lateral li a:hover:not(.header) {
+			background-color: #D0F3E7;
+		}
+
+		#menu_lateral {
+			list-style-type: none;
+			padding: 0;
+			margin: 0;
+		}
+
+		#menu_lateral li a {
+			border: 1px solid #ddd;
+			margin-top: -8px;
+			/* Prevent double borders */
+			background-color: #f6f6f6;
+			padding: 12px;
+			text-decoration: none;
+			font-size: 15px;
+			color: black;
+			font-weight: 400;
+		}
+
+		.flex-container3 {
+			display: flex;
+			background-color: #ffffff;
+		}
+
+		.flex-item3 {
+			background-color: #ffffff;
+			text-align: center;
+			margin: 6px;
+			color: black;
+		}
+
+hr {
+  border: none;              /* Quitar el borde por defecto */
+  height: 6px;               /* Grosor de la línea */
+  background-color: #a6e2ab;    /* Color de la línea */
+  width: 50%;                /* Ancho de la línea */
+  margin: 20px auto;         /* Centrar y añadir espacio vertical */
+}
+
+.w3-theme-l5 {color:#000 !important; background-color:#f8fcf8 !important}
+.w3-theme-l4 {color:#000 !important; background-color:#e7f6e8 !important}
+.w3-theme-l3 {color:#000 !important; background-color:#ceecd1 !important}
+.w3-theme-l2 {color:#000 !important; background-color:#b6e3ba !important}
+.w3-theme-l1 {color:#000 !important; background-color:#9ddaa3 !important}
+.w3-theme-d1 {color:#fff !important; background-color:#6cc775 !important}
+.w3-theme-d2 {color:#fff !important; background-color:#53be5e !important}
+.w3-theme-d3 {color:#fff !important; background-color:#42ad4d !important}
+.w3-theme-d4 {color:#fff !important; background-color:#389542 !important}
+.w3-theme-d5 {color:#fff !important; background-color:#2f7c37 !important}
+
+.w3-theme-light {color:#000 !important; background-color:#f8fcf8 !important}
+.w3-theme-dark {color:#fff !important; background-color:#2f7c37 !important}
+.w3-theme-action {color:#fff !important; background-color:#2f7c37 !important}
+
+.w3-theme {color:#000 !important; background-color:#84d08c !important}
+.w3-text-theme {color:#84d08c !important}
+.w3-border-theme {border-color:#84d08c !important}
+
+.w3-hover-theme:hover {color:#000 !important; background-color:#84d08c !important}
+.w3-hover-text-theme:hover {color:#84d08c !important}
+.w3-hover-border-theme:hover {border-color:#84d08c !important}
+
+
+.titulo-linea { 
+	display: flex; align-items: center; 
+	} 
+
+.titulo-linea h3 { 
+	margin: 0; 
+	padding-right: 10px; 
+	white-space: nowrap; 
+} 
+
+.titulo-linea hr { 
+	flex-grow: 1; 
+	border: none;
+	border-top: 4px solid #bddabd; /* grosor y color de la línea */ 
+}
+
+.titulo_seccion {
+	font-family: 'poppin-bold', sans-serif;
+	color: #ffffff;
+	font-size: 22px !important;
+	line-height: 22px;
+	padding: 10px;
+}
+
+
+.contenedor-transparente {
+   background-image: url('../images/borrar.png'); /* Ruta de la imagen */
+   
+    background-color: transparent; /* Fondo transparente */
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 800px;
+    height: 600px; /* Definir tamaño */
+}
+
+
+.indigena_index{
+    background-image:url(../images_indigena/indigena_index_b.png);
+	width:165px;
+	height:110px;
+	margin-top:5px;
+	margin-left:2px;
+	margin-right:1px;
+	margin-bottom:2px;
+}
+
+.subtitulo_indigena_index{
+	color:#61380B;
+	font-family:"Arial";
+	font-size:11px;
+	font-weight:bold;
+        margin-left:30px;
+	text-align: left;
+}
+
+.texto_indigena_index{
+		color:#0f0401;
+		font-family:"Arial";
+		font-size:11px;
+		margin-left:10px;
+		text-align: left;
+}
+
+.texto_indigena_index:hover{
+		color:#5f0707;
+		font-family:"Arial";
+		font-size:11px;
+		margin-left:10px;
+		text-align: left;
+}
+
+IMG.imagen_indigena_index{
+	float: right;
+	padding-top:-1px;
+	*padding-top:-5px;
+	padding-right:6px;
+	margin: 0px;
+	display: block;
+}
+
+
+.indigena_legislacion{
+    background-image:url(../images_indigena/indigena_index_a.png);
+	width:165px;
+	height:110px;
+	margin-top:5px;
+	margin-left:2px;
+	margin-right:1px;
+	margin-bottom:2px;
+}
+
+.subtitulo_indigena_legislacion{
+	color:#61380B;
+	font-family:"Arial";
+	font-size:11px;
+	font-weight:bold;
+        margin-left:35px;
+	text-align: left;
+}
+
+.texto_indigena_legislacion{
+		color:#ffffff;
+		font-family:"Arial";
+		font-size:11px;
+		margin-left:10px;
+		text-align: left;
+}
+
+.texto_indigena_legislacion:hover{
+		color:#610B0B;
+		font-family:"Arial";
+		font-size:11px;
+		margin-left:10px;
+		text-align: left;
+}
+
+IMG.imagen_indigena_legislacion{
+	float: right;
+	padding-top:0px;
+	padding-top:-5px;
+	padding-right:1px;
+	margin: 0px;
+	display: block;
+}
+
+
+.indigena_diccionario{
+    background-image:url(../images_indigena/indigena_index_c.png);
+	width:165px;
+	height:110px;
+	margin-top:5px;
+	margin-left:2px;
+	margin-right:1px;
+	margin-bottom:2px;
+}
+
+.subtitulo_indigena_diccionario{
+	color:#61380B;
+	font-family:"Arial";
+	font-size:11px;
+	font-weight:bold;
+        margin-left:35px;
+	text-align: left;
+}
+
+.texto_indigena_diccionario{
+		color:#ffffff;
+		font-family:"Arial";
+		font-size:11px;
+		margin-left:10px;
+		text-align: left;
+}
+
+.texto_indigena_diccionario:hover{
+		color:#610B0B;
+		font-family:"Arial";
+		font-size:11px;
+		margin-left:10px;
+		text-align: left;
+}
+
+IMG.imagen_indigena_diccionario{
+	float: right;
+        width: 60px;
+        padding-top:5px;
+	*padding-top:-1px;
+	padding-right:2px;
+	margin: 0px;
+	display: block;
+}
