@@ -7596,11 +7596,17 @@
             <span id="lectura-fecha" class="fecha-tarjeta" style="margin-bottom:15px;"></span>
             <h1 id="lectura-titulo"></h1>
             <span id="lectura-fuente" class="lectura-fuente"></span>
+            <button id="btn-audio-inmersivo" class="btn-audio" onclick="toggleAudioInmersivo()">🔊 Escuchar Artículo</button>
             
             <div id="lectura-texto" class="lectura-texto"></div>
 
             <div style="margin-top: 30px; text-align: center;">
-                <button class="btn-compartir-tarjeta" style="width: 100%; max-width: 300px; padding: 15px; font-size: 18px; background: var(--accent-gold); color: black; font-weight: bold;" onclick="ejecutarCompartirInmersivo()">🔗 Compartir Artículo</button>
+                <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: #25D366; color: white; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;" onclick="compartirWhatsApp()">💬 WhatsApp</button>
+                    <button class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: #1877F2; color: white; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;" onclick="compartirFacebook()">📘 Facebook</button>
+                    <button class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: var(--accent-gold); color: black; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;" onclick="ejecutarCompartirInmersivo()">🔗 Copiar Enlace</button>
+                    <button id="btn-audio-inmersivo" class="btn-audio" style="padding: 12px 20px; font-size: 15px; background: transparent; color: var(--accent-gold); border: 1px solid var(--accent-gold); font-weight: bold; border-radius: 4px; cursor: pointer;" onclick="toggleAudioInmersivo()">🔊 Escuchar Artículo</button>
+                </div>
             </div>
 
             <div class="reacciones-bar" style="margin-top: 25px; border-top: 1px solid #333; padding-top: 25px;">
@@ -8163,5 +8169,119 @@
     window.onscroll = checkScroll; document.getElementById('modal-lectura').onscroll = checkScroll;
     function scrollToTop() { const m = document.getElementById('modal-lectura'); m.style.display === 'flex' ? m.scrollTo({top:0, behavior:'smooth'}) : window.scrollTo({top:0, behavior:'smooth'}); }
 </script>
+
+    <script>
+    window.reproduciendoInmersivo = false;
+
+    window.toggleAudioInmersivo = function() {
+        const btn = document.getElementById('btn-audio-inmersivo');
+        const sintesis = window.speechSynthesis;
+        
+        if (!sintesis) {
+            alert("Tu navegador no soporta lectura por voz.");
+            return;
+        }
+
+        if (window.reproduciendoInmersivo) {
+            sintesis.cancel();
+            window.reproduciendoInmersivo = false;
+            if(btn) { btn.classList.remove('reproduciendo'); btn.innerHTML = '🔊 Escuchar Artículo'; }
+        } else {
+            sintesis.cancel();
+            const textoEl = document.getElementById('lectura-texto');
+            const tituloEl = document.getElementById('lectura-titulo');
+            const textoCompleto = (tituloEl ? tituloEl.innerText + ". " : "") + (textoEl ? textoEl.innerText : "");
+            
+            if (!textoCompleto.trim()) {
+                alert("No hay texto para leer en este artículo.");
+                return;
+            }
+
+            const mensaje = new SpeechSynthesisUtterance(textoCompleto);
+            mensaje.lang = 'es-ES';
+            
+            mensaje.onstart = function() {
+                window.reproduciendoInmersivo = true;
+                if(btn) { btn.classList.add('reproduciendo'); btn.innerHTML = '⏸️ Detener Lectura'; }
+            };
+            
+            mensaje.onend = function() {
+                window.reproduciendoInmersivo = false;
+                if(btn) { btn.classList.remove('reproduciendo'); btn.innerHTML = '🔊 Escuchar Artículo'; }
+            };
+            
+            mensaje.onerror = function() {
+                window.reproduciendoInmersivo = false;
+                if(btn) { btn.classList.remove('reproduciendo'); btn.innerHTML = '🔊 Escuchar Artículo'; }
+            };
+
+            sintesis.speak(mensaje);
+        }
+    };
+
+    window.ejecutarCompartirInmersivo = function() {
+        const idArt = typeof articuloActivoId !== 'undefined' ? articuloActivoId : "";
+        const urlActual = window.location.origin + window.location.pathname + (idArt ? "?leer=" + idArt : "");
+        
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(urlActual).then(() => {
+                alert("¡Enlace copiado al portapapeles! Ya puedes compartirlo.");
+            }).catch(() => {
+                prompt("Copia este enlace para compartir:", urlActual);
+            });
+        } else {
+            prompt("Copia este enlace para compartir:", urlActual);
+        }
+    };
+
+    // Asegurar limpieza de audio al cerrar modal
+    const cerrarOriginal = window.cerrarLectura;
+    window.cerrarLectura = function() {
+        if(window.speechSynthesis) window.speechSynthesis.cancel();
+        window.reproduciendoInmersivo = false;
+        const btn = document.getElementById('btn-audio-inmersivo');
+        if(btn) { btn.classList.remove('reproduciendo'); btn.innerHTML = '🔊 Escuchar Artículo'; }
+        if(typeof cerrarOriginal === 'function') cerrarOriginal();
+        else {
+            const modal = document.getElementById('modal-lectura');
+            if(modal) modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    };
+    </script>
+    
+
+    <script>
+    window.compartirWhatsApp = function() {
+        const titulo = document.getElementById('lectura-titulo') ? document.getElementById('lectura-titulo').innerText : "Portal Amazonía";
+        const idArt = typeof articuloActivoId !== 'undefined' && articuloActivoId ? articuloActivoId : "";
+        const urlActual = window.location.origin + window.location.pathname + (idArt ? "?leer=" + idArt : "");
+        const texto = encodeURIComponent(titulo + " - " + urlActual);
+        window.open("https://api.whatsapp.com/send?text=" + texto, "_blank");
+    };
+
+    window.compartirFacebook = function() {
+        const idArt = typeof articuloActivoId !== 'undefined' && articuloActivoId ? articuloActivoId : "";
+        const urlActual = window.location.origin + window.location.pathname + (idArt ? "?leer=" + idArt : "");
+        const urlEnc = encodeURIComponent(urlActual);
+        window.open("https://www.facebook.com/sharer/sharer.php?u=" + urlEnc, "_blank");
+    };
+
+    window.ejecutarCompartirInmersivo = function() {
+        const idArt = typeof articuloActivoId !== 'undefined' ? articuloActivoId : "";
+        const urlActual = window.location.origin + window.location.pathname + (idArt ? "?leer=" + idArt : "");
+        
+        if (navigator.share) {
+            navigator.share({ title: 'Portal Amazonía', url: urlActual }).catch(() => {});
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(urlActual).then(() => {
+                alert("¡Enlace copiado al portapapeles!");
+            });
+        } else {
+            prompt("Copia este enlace:", urlActual);
+        }
+    };
+    </script>
+    
 </body>
 </html>
