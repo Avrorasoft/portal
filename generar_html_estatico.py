@@ -131,7 +131,7 @@ def generar_index_estatico():
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Portal Amazonía Hoy | Vanguardia y Territorio</title>
+    <title>Portal Amazonía | Vanguardia y Territorio</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="w3.css">
     <link rel="stylesheet" href="amazonia.css">
@@ -269,11 +269,11 @@ def generar_index_estatico():
 <nav>
     <a href="#" class="nav-brand">
         <img src="images/logo1.png" alt="Logo" onerror="this.style.display='none'">
-        PORTAL AMAZONÍA HOY
+        AMAZONÍA
     </a>
     <div class="nav-links-container">
         <a href="#hero">Inicio</a>
-        <a href="#mosaico" id="nav-contador-noticias">Noticias (__TOTAL_ART__)</a>
+        <a href="#mosaico">Noticias</a>
         <a href="indigenas.html">Mapa Indígena</a>
         <a href="#turismo">Turismo</a>
         <a href="#economia">Economía</a>
@@ -400,7 +400,7 @@ __TARJETAS_HTML__
 
 <footer>
     <button class="btn-panel-secreto" onclick="abrirLogin()">Acceso Administrativo</button>
-    <h2 style="letter-spacing: 2px; color: #555;">PORTAL AMAZONÍA HOY</h2>
+    <h2 style="letter-spacing: 2px; color: #555;">PORTAL AMAZONÍA</h2>
     <p>creado por: Avrora Soft - Vibola LLC - 2026</p>
 </footer>
 

@@ -296,9 +296,9 @@
 
         /* CARTOGRAFÍA CON LÓGICA DE TRANSPARENCIA EN ZOOM PROGRESIVO */
         const map = L.map('mapa-etnia').setView([-16.290, -63.588], 5);
-        const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
-        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}');
-        L.control.layers({"Modo Oscuro": darkLayer, "Satélite Real": satelliteLayer}).addTo(map);
+        const darkLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 });
+        const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}').addTo(map);
+        L.control.layers({"Satélite Real": satelliteLayer, "Modo Oscuro": darkLayer}).addTo(map);
 
         const coords = [[-15.5, -68.2], [-14.8, -68.2], [-14.8, -67.5], [-15.5, -67.5]];
         const colorEtnia = '#9B59B6';
@@ -349,50 +349,83 @@
             }
         });
 
-        const reaccionGuardada = localStorage.getItem(`reaccion_${DOC_ID_ETNIA}`);
-        if(reaccionGuardada === 'likes') document.getElementById('btn-like').classList.add('activo');
-        if(reaccionGuardada === 'sads') document.getElementById('btn-sad').classList.add('activo');
+        if(localStorage.getItem(`reaccion_likes_${DOC_ID_ETNIA}`) === 'true') document.getElementById('btn-like').classList.add('activo');
+        if(localStorage.getItem(`reaccion_sads_${DOC_ID_ETNIA}`) === 'true') document.getElementById('btn-sad').classList.add('activo');
 
         function reaccionar(tipo) {
-            const reaccionActual = localStorage.getItem(`reaccion_${DOC_ID_ETNIA}`);
+            const storageKey = `voto_hecho_${DOC_ID_ETNIA}`;
+            const votoAnterior = localStorage.getItem(storageKey);
             const docRef = db.collection("reacciones_etnias").doc(DOC_ID_ETNIA);
-            
-            if (reaccionActual === tipo) {
-                let down = {}; down[tipo] = firebase.firestore.FieldValue.increment(-1);
-                docRef.update(down);
-                localStorage.removeItem(`reaccion_${DOC_ID_ETNIA}`);
-                document.getElementById(`btn-${tipo === 'likes' ? 'like' : 'sad'}`).classList.remove('activo');
+            let payload = {};
+
+            const btnLike = document.getElementById('btn-like');
+            const btnSad = document.getElementById('btn-sad');
+            if(btnLike) btnLike.disabled = true;
+            if(btnSad) btnSad.disabled = true;
+
+            if (votoAnterior === tipo) {
+                // Si ya estaba activo, el usuario quiere desmarcarlo (quitar su voto)
+                payload[tipo] = firebase.firestore.FieldValue.increment(-1);
+                docRef.set(payload, { merge: true }).then(() => {
+                    localStorage.removeItem(storageKey);
+                    if(btnLike) { btnLike.classList.remove('activo'); btnLike.disabled = false; }
+                    if(btnSad) { btnSad.classList.remove('activo'); btnSad.disabled = false; }
+                }).catch(() => {
+                    if(btnLike) btnLike.disabled = false;
+                    if(btnSad) btnSad.disabled = false;
+                });
+            } else if (votoAnterior) {
+                // Si tenía un voto en la otra opción, cambiamos de opinión (restamos anterior, sumamos nueva)
+                payload[votoAnterior] = firebase.firestore.FieldValue.increment(-1);
+                payload[tipo] = firebase.firestore.FieldValue.increment(1);
+                docRef.set(payload, { merge: true }).then(() => {
+                    localStorage.setItem(storageKey, tipo);
+                    if(btnLike) btnLike.classList.remove('activo');
+                    if(btnSad) btnSad.classList.remove('activo');
+                    if(tipo === 'likes' && btnLike) btnLike.classList.add('activo');
+                    if(tipo === 'sads' && btnSad) btnSad.classList.add('activo');
+                    if(btnLike) btnLike.disabled = false;
+                    if(btnSad) btnSad.disabled = false;
+                }).catch(() => {
+                    if(btnLike) btnLike.disabled = false;
+                    if(btnSad) btnSad.disabled = false;
+                });
             } else {
-                let up = {}; up[tipo] = firebase.firestore.FieldValue.increment(1);
-                document.getElementById(`btn-${tipo === 'likes' ? 'like' : 'sad'}`).classList.add('activo');
-                
-                if (reaccionActual) {
-                    up[reaccionActual] = firebase.firestore.FieldValue.increment(-1);
-                    document.getElementById(`btn-${reaccionActual === 'likes' ? 'like' : 'sad'}`).classList.remove('activo');
-                }
-                docRef.set(up, { merge: true });
-                localStorage.setItem(`reaccion_${DOC_ID_ETNIA}`, tipo);
+                // Sin voto previo: sumamos por primera vez
+                payload[tipo] = firebase.firestore.FieldValue.increment(1);
+                docRef.set(payload, { merge: true }).then(() => {
+                    localStorage.setItem(storageKey, tipo);
+                    if(tipo === 'likes' && btnLike) btnLike.classList.add('activo');
+                    if(tipo === 'sads' && btnSad) btnSad.classList.add('activo');
+                    if(btnLike) btnLike.disabled = false;
+                    if(btnSad) btnSad.disabled = false;
+                }).catch(() => {
+                    if(btnLike) btnLike.disabled = false;
+                    if(btnSad) btnSad.disabled = false;
+                });
             }
         }
 
         function publicarComentario() {
-            const nombre = document.getElementById('comentario-nombre').value.trim() || 'Anónimo';
-            const texto = document.getElementById('comentario-texto').value.trim();
+            const nomEl = document.getElementById('comentario-nombre');
+            const texEl = document.getElementById('comentario-texto');
+            if(!nomEl || !texEl) return;
+
+            const nombre = nomEl.value.trim() || 'Anónimo';
+            const texto = texEl.value.trim();
             if(texto === "") { alert("Por favor, escribe un comentario antes de publicar."); return; }
 
             const fechaStr = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
             const nuevoComentario = { nombre: nombre, texto: texto, fecha: fechaStr };
 
-            db.collection("reacciones_etnias").doc(DOC_ID_ETNIA).update({
+            db.collection("reacciones_etnias").doc(DOC_ID_ETNIA).set({
                 comentarios: firebase.firestore.FieldValue.arrayUnion(nuevoComentario)
-            }).catch(() => {
-                db.collection("reacciones_etnias").doc(DOC_ID_ETNIA).set({
-                    comentarios: [nuevoComentario]
-                }, { merge: true });
+            }, { merge: true }).then(() => {
+                nomEl.value = "";
+                texEl.value = "";
+            }).catch(err => {
+                alert("Error al enviar el comentario: " + err.message);
             });
-
-            document.getElementById('comentario-nombre').value = "";
-            document.getElementById('comentario-texto').value = "";
         }
 
         function renderizarComentarios(comentarios) {
