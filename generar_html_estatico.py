@@ -168,7 +168,7 @@ def generar_index_estatico():
         .btn-leer { padding: 10px 20px; background: var(--accent-gold); color: black; border: none; font-weight: 900; font-size: 11px; cursor: pointer; border-radius: 4px; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: background 0.3s; flex-grow: 1; text-align: center; }
         .btn-leer:hover { background: white; }
         .btn-compartir-tarjeta { background: #222; color: white; border: 1px solid #444; padding: 9px 15px; border-radius: 4px; font-size: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .btn-compartir-tarjeta:hover { background: var(--accent-gold); color: black; border-color: var(--accent-gold); }
+            <button type="button" class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: var(--accent-gold); color: black; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;" onclick="window.compartirNoticiaPortal('copiar')">🔗 Copiar Enlace para Página</button>
         .badge { position: absolute; top: 25px; left: 25px; background: var(--accent-gold); color: black; font-weight: 900; font-size: 10px; padding: 6px 12px; border-radius: 4px; text-transform: uppercase; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .reacciones-bar { display: flex; gap: 10px; border-top: 1px solid #333; padding-top: 15px; }
         .btn-reaccion { background: transparent; border: 1px solid #444; color: #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s; min-height: 48px; padding: 8px 10px; flex-grow: 1; }
@@ -322,9 +322,9 @@ __TARJETAS_HTML__
 
             <div style="margin-top: 30px; text-align: center;">
                 <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <button class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: #25D366; color: white; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;" onclick="compartirWhatsApp()">💬 WhatsApp</button>
-                    <button class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: #1877F2; color: white; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;" onclick="compartirFacebook()">📘 Facebook</button>
-                    <button class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: var(--accent-gold); color: black; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;" onclick="ejecutarCompartirInmersivo()">🔗 Copiar Enlace</button>
+            <button type="button" class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: #25D366; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;" onclick="window.compartirNoticiaPortal('whatsapp')">💬 Compartir en WhatsApp</button>
+            <button type="button" class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: #1877F2; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;" onclick="window.compartirNoticiaPortal('facebook')">📘 Compartir en Facebook</button>
+            <button type="button" class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: var(--accent-gold); color: black; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;" onclick="window.compartirNoticiaPortal('copiar')">🔗 Copiar Enlace para Página</button>
                     <button id="btn-audio-inmersivo" class="btn-audio" style="padding: 12px 20px; font-size: 15px; background: transparent; color: var(--accent-gold); border: 1px solid var(--accent-gold); font-weight: bold; border-radius: 4px; cursor: pointer;" onclick="toggleAudioInmersivo()">🔊 Escuchar Artículo</button>
                 </div>
             </div>
@@ -414,481 +414,7 @@ __TARJETAS_HTML__
 __JSON_MEMORIA__
 </script>
 
-<script>
-    // -------------------------------------------------------------
-    // 1. INICIALIZACIÓN Y CACHÉ LOCAL INFALIBLE
-    // -------------------------------------------------------------
-    let memoriaArticulos = {};
-    try {
-        const jsonText = document.getElementById("json-memoria").textContent;
-        memoriaArticulos = JSON.parse(jsonText);
-    } catch(e) {
-        console.error("Error al leer JSON base:", e);
-    }
 
-    let articuloActivoId = null;
-    let isAdmin = (sessionStorage.getItem("adminLogueado") === "true");
-
-    if(isAdmin) {
-        document.body.classList.add("modo-admin");
-        document.querySelectorAll('[data-categoria="ETNIA"]').forEach(el => el.style.display = '');
-    }
-
-    function guardarCache(id, data) {
-        try {
-            let c = JSON.parse(localStorage.getItem("cms_cache") || "{}");
-            c[id] = Object.assign({}, c[id] || {}, data);
-            localStorage.setItem("cms_cache", JSON.stringify(c));
-        } catch(e) {}
-    }
-
-    // -------------------------------------------------------------
-    // 2. SINCRONIZADOR DEL DOM EN TIEMPO REAL
-    // -------------------------------------------------------------
-    function sincronizarTarjetaDOM(id, art) {
-        id = String(id);
-        let card = document.getElementById("card-" + id);
-
-        if (art.eliminado) {
-            if (card) card.remove();
-            return;
-        }
-
-        if (!card) {
-            if (!art.titulo) return;
-            const html = `
-                <div class="admin-controls">
-                    <button class="btn-accion" onclick="abrirEditorExistente('${id}')">✏️ Editar</button>
-                    <button class="btn-accion btn-eliminar" onclick="eliminarNoticia('${id}')">🗑️ Borrar</button>
-                </div>
-                <div class="badge" id="badge-${id}"></div>
-                <div class="mosaico-img-container">
-                    <img src="" id="img-${id}" class="mosaico-img" onerror="this.src='images/default.jpg';">
-                </div>
-                <div class="texto-container">
-                    <span class="fecha-tarjeta" id="fecha-${id}"></span>
-                    <h3 id="titulo-${id}"></h3>
-                    <p id="resumen-${id}"></p>
-                </div>
-                <div class="tarjeta-footer">
-                    <div class="botones-principales-tarjeta">
-                        <button class="btn-leer" onclick="abrirLectura('${id}')">Leer Artículo</button>
-                        <button class="btn-compartir-tarjeta" id="share-${id}" title="Compartir">🔗</button>
-                    </div>
-                    <div class="reacciones-bar">
-                        <button id="btn-card-likes-${id}" onclick="reaccionar('${id}', 'likes')" class="btn-reaccion">👍 <span id="likes-${id}">0</span></button>
-                        <button id="btn-card-sads-${id}" onclick="reaccionar('${id}', 'sads')" class="btn-reaccion">😢 <span id="sads-${id}">0</span></button>
-                    </div>
-                </div>
-            `;
-            card = document.createElement("article");
-            card.id = "card-" + id;
-            card.setAttribute("data-id", id);
-            card.innerHTML = html;
-            const contenedor = document.getElementById("mosaico");
-            if (contenedor) contenedor.insertBefore(card, contenedor.firstChild);
-        }
-
-        card.className = `articulo-mosaico ${art.formato || ""}`.trim();
-        const cat = art.categoria || "NOTICIA";
-        card.setAttribute("data-categoria", cat);
-        if (cat.toUpperCase() === "ETNIA" && !isAdmin) card.style.display = "none";
-        else card.style.display = "";
-
-        document.getElementById(`badge-${id}`).innerText = cat;
-        
-        const imgEl = document.getElementById(`img-${id}`);
-        if (imgEl && art.imagen && imgEl.src !== art.imagen) imgEl.src = art.imagen;
-        
-        const fechaEl = document.getElementById(`fecha-${id}`);
-        if (fechaEl) fechaEl.innerText = art.fuente ? `${art.fecha || ''} | Fuente: ${art.fuente}` : (art.fecha || '');
-        
-        const titEl = document.getElementById(`titulo-${id}`);
-        if (titEl) titEl.innerText = art.titulo;
-        
-        const resEl = document.getElementById(`resumen-${id}`);
-        if (resEl) resEl.innerText = art.resumen;
-
-        const shEl = document.getElementById(`share-${id}`);
-        if (shEl) shEl.onclick = () => compartirNativo(art.titulo);
-
-        const lEl = document.getElementById(`likes-${id}`);
-        if (lEl) lEl.innerText = art.likes || 0;
-        
-        const sEl = document.getElementById(`sads-${id}`);
-        if (sEl) sEl.innerText = art.sads || 0;
-
-        const rUser = localStorage.getItem("reaccion_" + id);
-        const bL = document.getElementById(`btn-card-likes-${id}`);
-        const bS = document.getElementById(`btn-card-sads-${id}`);
-        if(bL) bL.className = "btn-reaccion " + (rUser === 'likes' ? 'activo' : '');
-        if(bS) bS.className = "btn-reaccion " + (rUser === 'sads' ? 'activo' : '');
-    }
-
-    // APLICAR CACHÉ DE INMEDIATO (0 ms)
-    try {
-        let c = JSON.parse(localStorage.getItem("cms_cache") || "{}");
-        Object.keys(c).forEach(id => {
-            if(c[id].eliminado) {
-                sincronizarTarjetaDOM(id, { eliminado: true });
-                delete memoriaArticulos[id];
-            } else if (memoriaArticulos[id] || c[id].titulo) {
-                memoriaArticulos[id] = Object.assign({}, memoriaArticulos[id] || {id: id}, c[id]);
-                sincronizarTarjetaDOM(id, memoriaArticulos[id]);
-            }
-        });
-    } catch(e) {}
-
-    // -------------------------------------------------------------
-    // 3. FIREBASE EN TIEMPO REAL
-    // -------------------------------------------------------------
-    const firebaseConfig = {
-        apiKey: "AIzaSyBOwGbgEqRzFysi3mMnJUHolxNtyp0cMsI",
-        authDomain: "portal-ia-web.firebaseapp.com",
-        projectId: "portal-ia-web",
-        storageBucket: "portal-ia-web.firebasestorage.app",
-        messagingSenderId: "936426810042",
-        appId: "1:936426810042:web:6945cec92108c4aed03083",
-        measurementId: "G-6CFNPR19HG"
-    };
-
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    try { db.enablePersistence({ synchronizeTabs: true }).catch(()=>{}); } catch(e){}
-
-    db.collection("articulos").onSnapshot((snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-            const id = String(change.doc.id);
-            const data = change.doc.data();
-
-            if (change.type === "removed" || data.eliminado) {
-                guardarCache(id, { eliminado: true });
-                sincronizarTarjetaDOM(id, { eliminado: true });
-                delete memoriaArticulos[id];
-                return;
-            }
-
-            const base = memoriaArticulos[id] || { id: id };
-            const imgPrev = base.imagen;
-            const fusionado = Object.assign({}, base, data);
-            
-            if (!data.editado_cms && (!data.imagen || data.imagen === "images/default.jpg") && imgPrev && imgPrev !== "images/default.jpg") {
-                fusionado.imagen = imgPrev;
-            }
-
-            memoriaArticulos[id] = fusionado;
-            if (data.editado_cms) guardarCache(id, fusionado);
-            sincronizarTarjetaDOM(id, fusionado);
-
-            if (articuloActivoId === id) {
-                actualizarBotonesInmersivos(id);
-                renderizarComentarios(fusionado.comentarios || []);
-            }
-        });
-    });
-
-    // -------------------------------------------------------------
-    // 4. LECTURA INMERSIVA Y REACCIONES
-    // -------------------------------------------------------------
-    function abrirLectura(id) {
-        articuloActivoId = String(id);
-        const art = memoriaArticulos[articuloActivoId];
-        if(!art) return;
-
-        if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch(()=>{});
-        }
-
-        document.getElementById('lectura-img').src = art.imagen || "images/default.jpg";
-        document.getElementById('lectura-categoria').innerText = art.categoria || "Noticia";
-        document.getElementById('lectura-fecha').innerText = art.fecha || "";
-        document.getElementById('lectura-titulo').innerText = art.titulo || "Sin título";
-        document.getElementById('lectura-fuente').innerText = art.fuente ? `Fuente: ${art.fuente}` : "";
-        
-        let contenidoRaw = art.contenido_completo ? art.contenido_completo : (art.resumen || "Contenido no disponible.");
-        let htmlContent = contenidoRaw.split(/\\r?\\n+/).map(p => p.trim()).filter(p => p.length > 0)
-            .map(p => `<p style="margin-bottom: 25px; margin-top: 0;">${p}</p>`).join('');
-            
-        document.getElementById('lectura-texto').innerHTML = htmlContent;
-
-        actualizarBotonesInmersivos(articuloActivoId);
-        document.getElementById('contenedor-foto-inmersiva').classList.remove('foto-clavada');
-        document.getElementById('btn-fijar-foto').classList.remove('activo');
-        renderizarComentarios(art.comentarios || []);
-
-        document.getElementById('modal-lectura').style.display = 'flex';
-        document.body.style.overflow = 'hidden'; 
-        document.getElementById('modal-lectura').scrollTop = 0;
-    }
-
-    function cerrarLectura() {
-        if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(()=>{});
-        document.getElementById('modal-lectura').style.display = 'none';
-        document.body.style.overflow = 'auto'; 
-        articuloActivoId = null;
-    }
-
-    function togglePinFoto() {
-        document.getElementById('contenedor-foto-inmersiva').classList.toggle('foto-clavada');
-        document.getElementById('btn-fijar-foto').classList.toggle('activo');
-    }
-
-    function reaccionar(id, tipo) {
-        id = String(id);
-        const art = memoriaArticulos[id];
-        if(!art) return;
-        
-        const storageKey = `reaccion_${id}`;
-        const reaccActual = localStorage.getItem(storageKey);
-        let updates = {};
-
-        if (reaccActual === tipo) {
-            art[tipo] = Math.max(0, (art[tipo] || 0) - 1);
-            updates[tipo] = art[tipo];
-            localStorage.removeItem(storageKey);
-        } else {
-            art[tipo] = (art[tipo] || 0) + 1;
-            updates[tipo] = art[tipo];
-            if (reaccActual) {
-                art[reaccActual] = Math.max(0, (art[reaccActual] || 0) - 1);
-                updates[reaccActual] = art[reaccActual];
-            }
-            localStorage.setItem(storageKey, tipo);
-        }
-
-        sincronizarTarjetaDOM(id, art);
-        if (articuloActivoId === id) actualizarBotonesInmersivos(id);
-        
-        guardarCache(id, updates);
-        db.collection("articulos").doc(id).set(updates, { merge: true });
-    }
-
-    function actualizarBotonesInmersivos(id) {
-        const art = memoriaArticulos[id];
-        if(!art) return;
-        const rUser = localStorage.getItem(`reaccion_${id}`);
-        const bl = document.getElementById('btn-like-inmersivo');
-        const bs = document.getElementById('btn-sad-inmersivo');
-        bl.innerHTML = `👍 Me Gusta (${art.likes || 0})`;
-        bl.className = `btn-reaccion ${rUser === 'likes' ? 'activo' : ''}`;
-        bl.onclick = () => reaccionar(id, 'likes');
-        bs.innerHTML = `😢 Qué Tristeza (${art.sads || 0})`;
-        bs.className = `btn-reaccion ${rUser === 'sads' ? 'activo' : ''}`;
-        bs.onclick = () => reaccionar(id, 'sads');
-    }
-
-    function publicarComentario() {
-        if(!articuloActivoId) return;
-        const nombre = document.getElementById('comentario-nombre').value.trim() || 'Anónimo';
-        const texto = document.getElementById('comentario-texto').value.trim();
-        if(!texto) return alert("Escribe un comentario.");
-
-        const art = memoriaArticulos[articuloActivoId];
-        const comentarios = art.comentarios ? art.comentarios.slice() : [];
-        comentarios.push({ nombre, texto, fecha: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString() });
-
-        art.comentarios = comentarios;
-        document.getElementById('comentario-nombre').value = "";
-        document.getElementById('comentario-texto').value = "";
-        renderizarComentarios(comentarios);
-
-        guardarCache(articuloActivoId, { comentarios });
-        db.collection("articulos").doc(articuloActivoId).set({ comentarios }, { merge: true });
-    }
-
-    function renderizarComentarios(comentarios) {
-        const cont = document.getElementById('lista-comentarios');
-        cont.innerHTML = '';
-        if(!comentarios || comentarios.length === 0) return cont.innerHTML = '<p style="color:#888;">Sé el primero en comentar.</p>';
-        comentarios.slice().reverse().forEach(c => {
-            cont.innerHTML += `<div class="comentario-item"><div class="comentario-autor">${c.nombre}</div><div class="comentario-fecha">${c.fecha}</div><p class="comentario-texto">${c.texto}</p></div>`;
-        });
-    }
-
-    // -------------------------------------------------------------
-    // 5. CMS, EDICIÓN Y EXPORTACIÓN
-    // -------------------------------------------------------------
-    function mostrarToast(msj) {
-        const t = document.getElementById("cms-toast");
-        if(t) { t.innerText = msj; t.style.display = "block"; setTimeout(()=>t.style.display="none", 3500); }
-    }
-
-    function abrirLogin() {
-        if(isAdmin) return abrirEditorNuevo();
-        document.getElementById('modal-admin').style.display = 'flex';
-        document.getElementById('vista-login').style.display = 'block';
-        document.getElementById('vista-editor').style.display = 'none';
-        document.getElementById('admin-pass').value = '';
-    }
-
-    function checkPass() {
-        if(document.getElementById('admin-pass').value === "2026") {
-            sessionStorage.setItem("adminLogueado", "true");
-            isAdmin = true;
-            document.body.classList.add("modo-admin");
-            document.querySelectorAll('[data-categoria="ETNIA"]').forEach(el => el.style.display = '');
-            closeAdmin();
-            mostrarToast("Modo Administrador activado.");
-        } else {
-            alert("Clave denegada.");
-        }
-    }
-
-    function cerrarSesionAdmin() {
-        sessionStorage.removeItem("adminLogueado");
-        isAdmin = false;
-        document.body.classList.remove("modo-admin");
-        mostrarToast("Sesión cerrada.");
-    }
-
-    function actualizarVistaPrevia(src) {
-        const img = document.getElementById("edit-preview-img");
-        if (src && src.trim() !== "") { img.src = src.trim(); img.style.display = "block"; } else img.style.display = "none";
-    }
-
-    function procesarFotoDesdePC(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = e => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement("canvas");
-                let w = img.width, h = img.height;
-                if (w > 1000 || h > 1000) { if (w > h) { h = Math.round(h * (1000 / w)); w = 1000; } else { w = Math.round(w * (1000 / h)); h = 1000; } }
-                canvas.width = w; canvas.height = h;
-                canvas.getContext("2d").drawImage(img, 0, 0, w, h);
-                const dataUrl = canvas.toDataURL("image/jpeg", 0.80);
-                document.getElementById("edit-imagen").value = dataUrl;
-                actualizarVistaPrevia(dataUrl);
-                mostrarToast("Fotografía optimizada y cargada.");
-            };
-            img.src = e.target.result;
-        };
-        reader.readAsDataURL(file);
-    }
-
-    function abrirEditorNuevo() {
-        document.getElementById('edit-id').value = "";
-        document.getElementById('edit-fecha').value = new Date().toISOString().slice(0, 10);
-        document.getElementById('edit-titulo').value = "";
-        document.getElementById('edit-etiqueta').value = "NOTICIA";
-        document.getElementById('edit-resumen').value = "";
-        document.getElementById('edit-contenido').value = "";
-        document.getElementById('edit-fuente').value = "REDACCIÓN CENTRAL";
-        document.getElementById('edit-imagen').value = "";
-        document.getElementById('edit-formato').value = "";
-        document.getElementById('upload-foto-pc').value = "";
-        actualizarVistaPrevia("");
-        document.getElementById('editor-titulo').innerText = "Crear Nueva Noticia";
-        document.getElementById('modal-admin').style.display = 'flex';
-        document.getElementById('vista-login').style.display = 'none';
-        document.getElementById('vista-editor').style.display = 'block';
-    }
-
-    function abrirEditorExistente(id) {
-        const art = memoriaArticulos[String(id)];
-        if(!art) return;
-        document.getElementById('edit-id').value = id;
-        document.getElementById('edit-fecha').value = art.fecha || "";
-        document.getElementById('edit-titulo').value = art.titulo || "";
-        document.getElementById('edit-etiqueta').value = art.categoria || "NOTICIA";
-        document.getElementById('edit-resumen').value = art.resumen || "";
-        document.getElementById('edit-contenido').value = art.contenido_completo || "";
-        document.getElementById('edit-fuente').value = art.fuente || "";
-        document.getElementById('edit-imagen').value = art.imagen || "";
-        document.getElementById('edit-formato').value = art.formato || "";
-        actualizarVistaPrevia(art.imagen || "");
-        document.getElementById('editor-titulo').innerText = `Editar Artículo (ID: ${id})`;
-        document.getElementById('modal-admin').style.display = 'flex';
-        document.getElementById('vista-login').style.display = 'none';
-        document.getElementById('vista-editor').style.display = 'block';
-    }
-
-    function guardarNoticia() {
-        const id = document.getElementById('edit-id').value.trim();
-        const docId = id === "" ? String(Date.now()) : String(id);
-        const artPrevio = memoriaArticulos[docId] || {};
-
-        const data = {
-            id: isNaN(Number(docId)) ? docId : Number(docId),
-            fecha: document.getElementById('edit-fecha').value.trim(),
-            titulo: document.getElementById('edit-titulo').value.trim(),
-            categoria: document.getElementById('edit-etiqueta').value.trim() || "NOTICIA",
-            resumen: document.getElementById('edit-resumen').value.trim(),
-            contenido_completo: document.getElementById('edit-contenido').value.trim(),
-            fuente: document.getElementById('edit-fuente').value.trim(),
-            imagen: document.getElementById('edit-imagen').value.trim() || "images/default.jpg",
-            formato: document.getElementById('edit-formato').value,
-            orden: artPrevio.orden || Date.now(),
-            likes: artPrevio.likes || 0,
-            sads: artPrevio.sads || 0,
-            comentarios: artPrevio.comentarios || [],
-            eliminado: false,
-            editado_cms: true,
-            ultima_edicion: Date.now()
-        };
-
-        if(!data.titulo) return alert("El título es obligatorio.");
-
-        const btnGuardar = document.getElementById("btn-guardar-cms");
-        if (btnGuardar) { btnGuardar.innerText = "⏳ GUARDANDO..."; btnGuardar.disabled = true; }
-
-        // APLICACIÓN INMEDIATA Y CACHÉ LOCAL
-        memoriaArticulos[docId] = data;
-        guardarCache(docId, data);
-        sincronizarTarjetaDOM(docId, data);
-
-        // RESPALDO A FIREBASE
-        db.collection("articulos").doc(docId).set(data, { merge: true }).then(() => {
-            if (btnGuardar) { btnGuardar.innerText = "💾 GUARDAR PERMANENTEMENTE"; btnGuardar.disabled = false; }
-            closeAdmin();
-            mostrarToast("Cambios guardados permanentemente.");
-        }).catch(err => {
-            if (btnGuardar) { btnGuardar.innerText = "💾 GUARDAR PERMANENTEMENTE"; btnGuardar.disabled = false; }
-            closeAdmin();
-            alert("Aviso: Tus cambios se guardaron localmente en la caché de este navegador, pero Firebase bloqueó la subida a la nube. Si refrescas la página (F5) los seguirás viendo, pero otros usuarios no hasta que actualices las reglas de Firestore a 'allow read, write: if true;'.");
-        });
-    }
-
-    function eliminarNoticia(id) {
-        id = String(id);
-        if(confirm("¿Seguro que deseas borrar este artículo? Desaparecerá de forma permanente.")) {
-            guardarCache(id, { eliminado: true });
-            sincronizarTarjetaDOM(id, { eliminado: true });
-            db.collection("articulos").doc(id).set({ eliminado: true, editado_cms: true }, { merge: true })
-                .then(() => mostrarToast("Artículo eliminado de la nube."))
-                .catch(() => alert("Aviso: El artículo se borró localmente, pero Firebase bloqueó la eliminación en la nube."));
-        }
-    }
-
-    function exportarBaseDatosJSON() {
-        const exportar = Object.values(memoriaArticulos).filter(a => !a.eliminado);
-        const blob = new Blob([JSON.stringify(exportar, null, 4)], { type: "application/json;charset=utf-8" });
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = "articulos_portal.json";
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        mostrarToast("Archivo articulos_portal.json descargado.");
-    }
-
-    function closeAdmin() { document.getElementById('modal-admin').style.display = 'none'; }
-    window.onclick = e => { if (e.target == document.getElementById('modal-admin')) closeAdmin(); }
-
-    function ajustarTeclado(el) { setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }
-    function compartirNativo(t) { navigator.share ? navigator.share({title: t, url: window.location.href}).catch(e=>{}) : alert("Enlace copiado al portapapeles."); }
-    function checkScroll() {
-        const b = document.getElementById("btn-volver-arriba");
-        const m = document.getElementById('modal-lectura');
-        let sc = m.style.display === 'flex' ? m.scrollTop : document.documentElement.scrollTop;
-        if (sc > 400) { b.style.display = "flex"; setTimeout(() => b.style.opacity = "1", 50); }
-        else { b.style.opacity = "0"; setTimeout(() => { if (sc <= 400) b.style.display = "none"; }, 300); }
-    }
-    window.onscroll = checkScroll; document.getElementById('modal-lectura').onscroll = checkScroll;
-    function scrollToTop() { const m = document.getElementById('modal-lectura'); m.style.display === 'flex' ? m.scrollTo({top:0, behavior:'smooth'}) : window.scrollTo({top:0, behavior:'smooth'}); }
-</script>
 
     <script>
     window.reproduciendoInmersivo = false;
@@ -971,38 +497,124 @@ __JSON_MEMORIA__
     </script>
     
 
-    <script>
-    window.compartirWhatsApp = function() {
-        const titulo = document.getElementById('lectura-titulo') ? document.getElementById('lectura-titulo').innerText : "Portal Amazonía";
-        const idArt = typeof articuloActivoId !== 'undefined' && articuloActivoId ? articuloActivoId : "";
-        const urlActual = window.location.origin + window.location.pathname + (idArt ? "?leer=" + idArt : "");
-        const texto = encodeURIComponent(titulo + " - " + urlActual);
-        window.open("https://api.whatsapp.com/send?text=" + texto, "_blank");
-    };
-
-    window.compartirFacebook = function() {
-        const idArt = typeof articuloActivoId !== 'undefined' && articuloActivoId ? articuloActivoId : "";
-        const urlActual = window.location.origin + window.location.pathname + (idArt ? "?leer=" + idArt : "");
-        const urlEnc = encodeURIComponent(urlActual);
-        window.open("https://www.facebook.com/sharer/sharer.php?u=" + urlEnc, "_blank");
-    };
-
-    window.ejecutarCompartirInmersivo = function() {
-        const idArt = typeof articuloActivoId !== 'undefined' ? articuloActivoId : "";
-        const urlActual = window.location.origin + window.location.pathname + (idArt ? "?leer=" + idArt : "");
-        
-        if (navigator.share) {
-            navigator.share({ title: 'Portal Amazonía', url: urlActual }).catch(() => {});
-        } else if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(urlActual).then(() => {
-                alert("¡Enlace copiado al portapapeles!");
-            });
-        } else {
-            prompt("Copia este enlace:", urlActual);
-        }
-    };
-    </script>
     
+
+
+
+
+<script>
+// --- FUNCIÓN MAESTRA DE INMERSIÓN Y COMPARTIR ---
+window.abrirLectura = function(idArt) {
+    if (typeof articulosData !== 'undefined' && articulosData[idArt]) {
+        var art = articulosData[idArt];
+        window.idArticuloInmersivo = String(idArt);
+        
+        var imgEl = document.getElementById('lectura-img');
+        if (imgEl) imgEl.src = art.imagen || art.img || 'images/default.jpg';
+        
+        var titEl = document.getElementById('lectura-titulo');
+        if (titEl) titEl.innerText = art.titulo || art.title || '';
+        
+        var catEl = document.getElementById('lectura-categoria');
+        if (catEl) catEl.innerText = art.categoria || art.tipo || 'Noticia';
+        
+        var fecEl = document.getElementById('lectura-fecha');
+        if (fecEl) fecEl.innerText = art.fecha || '';
+        
+        var fueEl = document.getElementById('lectura-fuente');
+        if (fueEl) fueEl.innerText = art.fuente ? ('Fuente: ' + art.fuente) : '';
+        
+        var txtEl = document.getElementById('lectura-texto');
+        if (txtEl) {
+            var cuerpo = art.contenido || art.texto || art.cuerpo || "";
+            txtEl.innerHTML = cuerpo;
+        }
+        
+        var modal = document.getElementById('modal-lectura');
+        if (modal) modal.style.display = 'flex';
+    }
+};
+
+window.compartirNativo = function(tituloArticulo, ev) {
+    var idEncontrado = "1";
+    try {
+        var origen = (ev && ev.target) ? ev.target : (window.event && window.event.target ? window.event.target : null);
+        var el = origen;
+        while (el && el !== document.body) {
+            var btnLeer = el.querySelector ? el.querySelector('[onclick*="abrirLectura"]') : null;
+            if (!btnLeer && el.getAttribute && el.getAttribute('onclick')) {
+                var attr = el.getAttribute('onclick');
+                var matchId = attr.match(/abrirLectura\(['"]?([^'"]+)['"]?\)/);
+                if (matchId && matchId[2]) {
+                    idEncontrado = matchId[2];
+                    break;
+                }
+            }
+            el = el.parentElement;
+        }
+    } catch (err) {}
+
+    if (typeof window.idArticuloInmersivo !== 'undefined' && window.idArticuloInmersivo) {
+        idEncontrado = window.idArticuloInmersivo;
+    }
+
+    var urlArt = "https://portal-ia-web.web.app/noticias/articulo_" + encodeURIComponent(idEncontrado) + ".html";
+    var titulo = tituloArticulo || "Portal Amazonía";
+    var nl = String.fromCharCode(10);
+    var textoCompleto = "📰 " + titulo + nl + nl + "👉 Lee la noticia completa en Portal Amazonía:" + nl + urlArt;
+
+    try {
+        var area = document.createElement('textarea');
+        area.value = textoCompleto;
+        area.style.position = 'fixed';
+        area.style.left = '-9999px';
+        area.style.top = '0';
+        document.body.appendChild(area);
+        area.focus();
+        area.select();
+        document.execCommand('copy');
+        document.body.removeChild(area);
+    } catch (e) {}
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textoCompleto).catch(function(){});
+    }
+
+    alert("📋 ¡Enlace y texto copiados al portapapeles!\n\nPégalo con Ctrl+V en tu página institucional de Canal 9.");
+    window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(urlArt), '_blank', 'width=650,height=600');
+};
+
+window.compartirNoticiaPortal = function(red, idForzado, tituloForzado) {
+    if (red === 'whatsapp') {
+        var idArt = String(idForzado || window.idArticuloInmersivo || "1").trim();
+        var urlArt = "https://portal-ia-web.web.app/noticias/articulo_" + encodeURIComponent(idArt) + ".html";
+        var elTit = document.getElementById('lectura-titulo');
+        var titulo = tituloForzado || (elTit && elTit.innerText ? elTit.innerText.trim() : "Portal Amazonía");
+        var nl = String.fromCharCode(10);
+        var msg = "📰 *" + titulo + "*" + nl + "👉 " + urlArt;
+        window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(msg), '_blank');
+    } else {
+        compartirNativo(tituloForzado || "Portal Amazonía");
+    }
+};
+
+window.compartirWhatsApp = function() { window.compartirNoticiaPortal('whatsapp'); };
+window.compartirFacebook = function() { window.compartirNoticiaPortal('facebook'); };
+window.compartirWhatsAppModal = function() { window.compartirNoticiaPortal('whatsapp'); };
+window.compartirFacebookModal = function() { window.compartirNoticiaPortal('facebook'); };
+window.copiarEnlaceModal = function() { window.compartirNoticiaPortal('copiar'); };
+window.ejecutarCompartirInmersivo = function() { window.compartirNoticiaPortal('facebook'); };
+
+window.addEventListener('load', function() {
+    var params = new URLSearchParams(window.location.search);
+    var idUrl = params.get('id') || params.get('articulo');
+    if (idUrl && typeof abrirLectura === 'function') {
+        setTimeout(function() {
+            abrirLectura(idUrl);
+        }, 150);
+    }
+});
+</script>
 </body>
 </html>
 """
@@ -1017,3 +629,276 @@ __JSON_MEMORIA__
 
 if __name__ == "__main__":
     generar_index_estatico()
+
+
+def limpiar_slug(texto):
+    if not texto:
+        return "articulos"
+    texto = unicodedata.normalize('NFD', texto).encode('ascii', 'ignore').decode('utf-8')
+    texto = re.sub(r'[^a-zA-Z0-9_-]', '_', texto.lower())
+    return texto.strip('_') or 'articulos'
+
+def generar_paginas_individuales(articulos):
+    template_art = '''<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>__TITULO__ - Portal Amazonía</title>
+    
+    <!-- Open Graph para Redes Sociales (Facebook, WhatsApp, Instagram, TikTok) -->
+    <meta property="og:title" content="__TITULO__" />
+    <meta property="og:description" content="__TEXTO_CORTO__..." />
+    <meta property="og:image" content="__IMAGEN_OG__" />
+    <meta property="og:url" content="https://portal-ia-web.web.app/__CARPETA__/articulo___ID__.html" />
+    <meta property="og:type" content="article" />
+    
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="__TITULO__">
+    <meta name="twitter:description" content="__TEXTO_CORTO__...">
+    <meta name="twitter:image" content="__IMAGEN_OG__">
+
+    <link rel="stylesheet" href="../w3.css">
+    <link rel="stylesheet" href="../amazonia.css">
+    <style>
+        body { background: #121212; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
+        .header-nav { background: #1f1f1f; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #d4af37; }
+        .header-nav a { color: #d4af37; text-decoration: none; font-weight: bold; font-size: 18px; }
+        .container { max-width: 800px; margin: 40px auto; background: #1e1e1e; padding: 40px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        h1 { color: #d4af37; font-size: 28px; margin-bottom: 10px; }
+        .meta { color: #888; font-size: 14px; margin-bottom: 20px; }
+        img { width: 100%; max-height: 450px; object-fit: cover; border-radius: 6px; margin-bottom: 25px; }
+        .texto-articulo { font-size: 18px; line-height: 1.7; color: #dcdcdc; white-space: pre-line; }
+        .acciones { margin-top: 40px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap; }
+        .btn { padding: 12px 25px; font-weight: bold; border-radius: 4px; text-decoration: none; border: none; cursor: pointer; }
+        .btn-ws { background: #25D366; color: white; }
+        .btn-fb { background: #1877F2; color: white; }
+        .btn-volver { background: #d4af37; color: black; }
+    </style>
+</head>
+<body>
+    <div class="header-nav">
+        <a href="../index.html">⬅ Volver al Portal Amazonía</a>
+        <a href="../index.html">Inicio</a>
+    </div>
+
+    <div class="container">
+        <h1>__TITULO__</h1>
+        <div class="meta">📅 __FECHA__ &nbsp;|&nbsp; ✍️ __FUENTE__</div>
+        <img src="../__IMAGEN__" alt="__TITULO__">
+        <div class="texto-articulo">__TEXTO_COMPLETO__</div>
+
+        <div class="acciones">
+            <a href="https://api.whatsapp.com/send?text=__TITULO_ENC__%20-%20https://portal-ia-web.web.app/__CARPETA__/articulo___ID__.html" target="_blank" class="btn btn-ws">💬 Compartir en WhatsApp</a>
+            <a href="https://www.facebook.com/sharer/sharer.php?u=https://portal-ia-web.web.app/__CARPETA__/articulo___ID__.html" target="_blank" class="btn btn-fb">📘 Compartir en Facebook</a>
+            <a href="../index.html" class="btn btn-volver">🏠 Ir al Inicio</a>
+        </div>
+    </div>
+
+    <script>
+    // Controladores infalibles con soporte para carpetas por tipo
+    document.addEventListener('click', function(e) {
+        const target = e.target.closest('button, a');
+        if (!target) return;
+        
+        const text = target.innerText || target.textContent || "";
+        const idArt = typeof articuloActivoId !== 'undefined' && articuloActivoId ? articuloActivoId : (window.currentArticleId || "");
+        const carpeta = (window.articuloFolders && idArt && window.articuloFolders[idArt]) ? window.articuloFolders[idArt] : "articulos";
+        
+        if (text.includes("WhatsApp") && (target.closest('.modal') || target.closest('#modal-lectura') || target.closest('.acciones'))) {
+            e.preventDefault();
+            const titulo = document.getElementById('lectura-titulo') ? document.getElementById('lectura-titulo').innerText : "Portal Amazonía";
+            const urlArt = idArt ? "https://portal-ia-web.web.app/" + carpeta + "/articulo_" + idArt + ".html" : window.location.href;
+            window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent("📰 " + titulo + "\n👉 " + urlArt), '_blank');
+        }
+        
+        if ((text.includes("Facebook") || text.includes("compartir")) && !text.includes("WhatsApp") && !text.includes("Copiar") && (target.closest('.modal') || target.closest('#modal-lectura') || target.closest('.acciones'))) {
+            e.preventDefault();
+            const urlArt = idArt ? "https://portal-ia-web.web.app/" + carpeta + "/articulo_" + idArt + ".html" : window.location.href;
+            window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(urlArt), '_blank', 'width=600,height=500');
+        }
+        
+        if ((text.includes("Copiar") || text.includes("Enlace")) && (target.closest('.modal') || target.closest('#modal-lectura') || target.closest('.acciones'))) {
+            e.preventDefault();
+            const urlArt = idArt ? "https://portal-ia-web.web.app/" + carpeta + "/articulo_" + idArt + ".html" : window.location.href;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(urlArt).then(() => {
+                    alert("¡Enlace del artículo copiado al portapapeles!");
+                }).catch(() => {
+                    prompt("Copia este enlace:", urlArt);
+                });
+            } else {
+                prompt("Copia este enlace:", urlArt);
+            }
+        }
+    });
+    </script>
+    
+
+
+
+
+
+
+<script>
+// --- FUNCIÓN MAESTRA DE INMERSIÓN Y COMPARTIR ---
+window.abrirLectura = function(idArt) {
+    if (typeof articulosData !== 'undefined' && articulosData[idArt]) {
+        var art = articulosData[idArt];
+        window.idArticuloInmersivo = String(idArt);
+        
+        var imgEl = document.getElementById('lectura-img');
+        if (imgEl) imgEl.src = art.imagen || art.img || 'images/default.jpg';
+        
+        var titEl = document.getElementById('lectura-titulo');
+        if (titEl) titEl.innerText = art.titulo || art.title || '';
+        
+        var catEl = document.getElementById('lectura-categoria');
+        if (catEl) catEl.innerText = art.categoria || art.tipo || 'Noticia';
+        
+        var fecEl = document.getElementById('lectura-fecha');
+        if (fecEl) fecEl.innerText = art.fecha || '';
+        
+        var fueEl = document.getElementById('lectura-fuente');
+        if (fueEl) fueEl.innerText = art.fuente ? ('Fuente: ' + art.fuente) : '';
+        
+        var txtEl = document.getElementById('lectura-texto');
+        if (txtEl) {
+            var cuerpo = art.contenido || art.texto || art.cuerpo || "";
+            txtEl.innerHTML = cuerpo;
+        }
+        
+        var modal = document.getElementById('modal-lectura');
+        if (modal) modal.style.display = 'flex';
+    }
+};
+
+window.compartirNativo = function(tituloArticulo, ev) {
+    var idEncontrado = "1";
+    try {
+        var origen = (ev && ev.target) ? ev.target : (window.event && window.event.target ? window.event.target : null);
+        var el = origen;
+        while (el && el !== document.body) {
+            var btnLeer = el.querySelector ? el.querySelector('[onclick*="abrirLectura"]') : null;
+            if (!btnLeer && el.getAttribute && el.getAttribute('onclick')) {
+                var attr = el.getAttribute('onclick');
+                var matchId = attr.match(/abrirLectura\(['"]?([^'"]+)['"]?\)/);
+                if (matchId && matchId[2]) {
+                    idEncontrado = matchId[2];
+                    break;
+                }
+            }
+            el = el.parentElement;
+        }
+    } catch (err) {}
+
+    if (typeof window.idArticuloInmersivo !== 'undefined' && window.idArticuloInmersivo) {
+        idEncontrado = window.idArticuloInmersivo;
+    }
+
+    var urlArt = "https://portal-ia-web.web.app/noticias/articulo_" + encodeURIComponent(idEncontrado) + ".html";
+    var titulo = tituloArticulo || "Portal Amazonía";
+    var nl = String.fromCharCode(10);
+    var textoCompleto = "📰 " + titulo + nl + nl + "👉 Lee la noticia completa en Portal Amazonía:" + nl + urlArt;
+
+    try {
+        var area = document.createElement('textarea');
+        area.value = textoCompleto;
+        area.style.position = 'fixed';
+        area.style.left = '-9999px';
+        area.style.top = '0';
+        document.body.appendChild(area);
+        area.focus();
+        area.select();
+        document.execCommand('copy');
+        document.body.removeChild(area);
+    } catch (e) {}
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(textoCompleto).catch(function(){});
+    }
+
+    alert("📋 ¡Enlace y texto copiados al portapapeles!\n\nPégalo con Ctrl+V en tu página institucional de Canal 9.");
+    window.open("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(urlArt), '_blank', 'width=650,height=600');
+};
+
+window.compartirNoticiaPortal = function(red, idForzado, tituloForzado) {
+    if (red === 'whatsapp') {
+        var idArt = String(idForzado || window.idArticuloInmersivo || "1").trim();
+        var urlArt = "https://portal-ia-web.web.app/noticias/articulo_" + encodeURIComponent(idArt) + ".html";
+        var elTit = document.getElementById('lectura-titulo');
+        var titulo = tituloForzado || (elTit && elTit.innerText ? elTit.innerText.trim() : "Portal Amazonía");
+        var nl = String.fromCharCode(10);
+        var msg = "📰 *" + titulo + "*" + nl + "👉 " + urlArt;
+        window.open("https://api.whatsapp.com/send?text=" + encodeURIComponent(msg), '_blank');
+    } else {
+        compartirNativo(tituloForzado || "Portal Amazonía");
+    }
+};
+
+window.compartirWhatsApp = function() { window.compartirNoticiaPortal('whatsapp'); };
+window.compartirFacebook = function() { window.compartirNoticiaPortal('facebook'); };
+window.compartirWhatsAppModal = function() { window.compartirNoticiaPortal('whatsapp'); };
+window.compartirFacebookModal = function() { window.compartirNoticiaPortal('facebook'); };
+window.copiarEnlaceModal = function() { window.compartirNoticiaPortal('copiar'); };
+window.ejecutarCompartirInmersivo = function() { window.compartirNoticiaPortal('facebook'); };
+
+window.addEventListener('load', function() {
+    var params = new URLSearchParams(window.location.search);
+    var idUrl = params.get('id') || params.get('articulo');
+    if (idUrl && typeof abrirLectura === 'function') {
+        setTimeout(function() {
+            abrirLectura(idUrl);
+        }, 150);
+    }
+});
+</script>
+</body>
+</html>'''
+
+    folders_map = {}
+    contador = 0
+
+    for art in articulos:
+        art_id = str(art.get('id', '1'))
+        tipo = art.get('tipo') or art.get('categoria') or 'articulos'
+        carpeta = limpiar_slug(tipo)
+        folders_map[art_id] = carpeta
+
+        titulo = art.get('titulo', 'Portal Amazonía')
+        texto = art.get('texto', '')
+        imagen = art.get('imagen', 'images/logo.png')
+        fuente = art.get('fuente', 'Redacción Amazonía')
+        fecha = art.get('fecha', '')
+        
+        img_og = imagen if imagen.startswith('http') else "https://portal-ia-web.web.app/" + imagen
+        titulo_enc = urllib.parse.quote(titulo + " - Lee esta noticia en Portal Amazonía:")
+        texto_corto = texto[:150].replace('"', '').replace("'", "")
+        
+        # Crear la subcarpeta física si no existe
+        sub_dir = os.path.join(base_dir, carpeta)
+        os.makedirs(sub_dir, exist_ok=True)
+
+        html_pagina = template_art.replace("__TITULO__", titulo) \
+                                  .replace("__TEXTO_CORTO__", texto_corto) \
+                                  .replace("__IMAGEN_OG__", img_og) \
+                                  .replace("__CARPETA__", carpeta) \
+                                  .replace("__ID__", art_id) \
+                                  .replace("__FECHA__", fecha) \
+                                  .replace("__FUENTE__", fuente) \
+                                  .replace("__IMAGEN__", imagen) \
+                                  .replace("__TEXTO_COMPLETO__", texto) \
+                                  .replace("__TITULO_ENC__", titulo_enc)
+        
+        filepath = os.path.join(sub_dir, f"articulo_{art_id}.html")
+        with open(filepath, "w", encoding="utf-8") as f_art:
+            f_art.write(html_pagina)
+        contador += 1
+
+    # Guardar el mapa de carpetas para que index.html lo use en los botones de compartir
+    map_js = f"\n<script>\nwindow.articuloFolders = {json.dumps(folders_map)};\n</script>\n"
+    
+    # Inyectar el diccionario en index.html o como script global
+    print(f"¡{contador} páginas organizadas en carpetas por tipo con éxito!")
+    return map_js
