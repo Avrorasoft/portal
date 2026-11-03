@@ -1,14 +1,10 @@
 {
   "hosting": {
-    "public": ".",
+    "public": "public",
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**",
-      "*.py",
-      "*.ps1",
-      "*.zip",
-      "*.docx"
+      "**/node_modules/**"
     ],
     "maxReleases": 3
   }

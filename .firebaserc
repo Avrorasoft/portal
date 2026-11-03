@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "portal-ia-web"
-  }
+  },
+  "targets": {
+    "portal-ia-web": {
+      "hosting": {
+        "portal-ia-web": [
+          "portal-ia-web"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
