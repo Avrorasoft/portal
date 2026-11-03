@@ -4,7 +4,12 @@
     "ignore": [
       "firebase.json",
       "**/.*",
-      "**/node_modules/**"
-    ]
+      "**/node_modules/**",
+      "*.py",
+      "*.ps1",
+      "*.zip",
+      "*.docx"
+    ],
+    "maxReleases": 3
   }
 }
