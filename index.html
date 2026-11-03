@@ -39,7 +39,7 @@
         .btn-leer { padding: 10px 20px; background: var(--accent-gold); color: black; border: none; font-weight: 900; font-size: 11px; cursor: pointer; border-radius: 4px; text-transform: uppercase; box-shadow: 0 4px 10px rgba(0,0,0,0.5); transition: background 0.3s; flex-grow: 1; text-align: center; }
         .btn-leer:hover { background: white; }
         .btn-compartir-tarjeta { background: #222; color: white; border: 1px solid #444; padding: 9px 15px; border-radius: 4px; font-size: 16px; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .btn-compartir-tarjeta:hover { background: var(--accent-gold); color: black; border-color: var(--accent-gold); }
+            <button type="button" class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: var(--accent-gold); color: black; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;" onclick="window.compartirNoticiaPortal('copiar')">🔗 Copiar Texto y Enlace</button>
         .badge { position: absolute; top: 25px; left: 25px; background: var(--accent-gold); color: black; font-weight: 900; font-size: 10px; padding: 6px 12px; border-radius: 4px; text-transform: uppercase; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .reacciones-bar { display: flex; gap: 10px; border-top: 1px solid #333; padding-top: 15px; }
         .btn-reaccion { background: transparent; border: 1px solid #444; color: #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s; min-height: 48px; padding: 8px 10px; flex-grow: 1; }
@@ -7602,9 +7602,9 @@
 
             <div style="margin-top: 30px; text-align: center;">
                 <div style="margin-top: 30px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                    <button class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: #25D366; color: white; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;" onclick="compartirWhatsApp()">💬 WhatsApp</button>
-                    <button class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: #1877F2; color: white; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;" onclick="compartirFacebook()">📘 Facebook</button>
-                    <button class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: var(--accent-gold); color: black; font-weight: bold; border-radius: 4px; border: none; cursor: pointer;" onclick="ejecutarCompartirInmersivo()">🔗 Copiar Enlace</button>
+            <button type="button" class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: #25D366; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;" onclick="window.compartirNoticiaPortal('whatsapp')">💬 Compartir en WhatsApp</button>
+            <button type="button" class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: #1877F2; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;" onclick="window.compartirNoticiaPortal('facebook')">📘 Compartir en Facebook</button>
+            <button type="button" class="btn-compartir-tarjeta" style="padding: 12px 20px; font-size: 15px; background: var(--accent-gold); color: black; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;" onclick="window.compartirNoticiaPortal('copiar')">🔗 Copiar Texto y Enlace</button>
                     <button id="btn-audio-inmersivo" class="btn-audio" style="padding: 12px 20px; font-size: 15px; background: transparent; color: var(--accent-gold); border: 1px solid var(--accent-gold); font-weight: bold; border-radius: 4px; cursor: pointer;" onclick="toggleAudioInmersivo()">🔊 Escuchar Artículo</button>
                 </div>
             </div>
@@ -7879,7 +7879,8 @@
             document.documentElement.requestFullscreen().catch(()=>{});
         }
 
-        document.getElementById('lectura-img').src = art.imagen || "images/default.jpg";
+        window.idArticuloInmersivo = String(id); window.artInmersivoActual = art;
+    document.getElementById('lectura-img').src = art.imagen || "images/default.jpg";
         document.getElementById('lectura-categoria').innerText = art.categoria || "Noticia";
         document.getElementById('lectura-fecha').innerText = art.fecha || "";
         document.getElementById('lectura-titulo').innerText = art.titulo || "Sin título";
@@ -8158,7 +8159,7 @@
     window.onclick = e => { if (e.target == document.getElementById('modal-admin')) closeAdmin(); }
 
     function ajustarTeclado(el) { setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }
-    function compartirNativo(t) { navigator.share ? navigator.share({title: t, url: window.location.href}).catch(e=>{}) : alert("Enlace copiado al portapapeles."); }
+function compartirNativo(t) { window.compartirDesdeTarjetaIndex(t, typeof event !== "undefined" ? event : null); }
     function checkScroll() {
         const b = document.getElementById("btn-volver-arriba");
         const m = document.getElementById('modal-lectura');
@@ -8252,36 +8253,84 @@
     
 
     <script>
-    window.compartirWhatsApp = function() {
-        const titulo = document.getElementById('lectura-titulo') ? document.getElementById('lectura-titulo').innerText : "Portal Amazonía";
-        const idArt = typeof articuloActivoId !== 'undefined' && articuloActivoId ? articuloActivoId : "";
-        const urlActual = window.location.origin + window.location.pathname + (idArt ? "?leer=" + idArt : "");
-        const texto = encodeURIComponent(titulo + " - " + urlActual);
-        window.open("https://api.whatsapp.com/send?text=" + texto, "_blank");
-    };
+    // --- SISTEMA DE COMPARTIR NATIVO Y LIMPIO ---
+window.abrirEnlaceLimpioSinOpener = function(url) {
+    var a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function() {
+        if (a.parentNode) a.parentNode.removeChild(a);
+    }, 200);
+};
 
-    window.compartirFacebook = function() {
-        const idArt = typeof articuloActivoId !== 'undefined' && articuloActivoId ? articuloActivoId : "";
-        const urlActual = window.location.origin + window.location.pathname + (idArt ? "?leer=" + idArt : "");
-        const urlEnc = encodeURIComponent(urlActual);
-        window.open("https://www.facebook.com/sharer/sharer.php?u=" + urlEnc, "_blank");
-    };
+window.compartirNoticiaPortal = function(red, idForzado, tituloForzado) {
+    var idArt = String(idForzado || window.idArticuloInmersivo || "1").trim();
+    var elTit = document.getElementById('lectura-titulo');
+    var titulo = tituloForzado || (elTit && elTit.innerText ? elTit.innerText.trim() : "Portal Amazonía");
+    var urlArt = "https://portal-ia-web.web.app/noticias/articulo_" + encodeURIComponent(idArt) + ".html";
+    var nl = String.fromCharCode(10);
 
-    window.ejecutarCompartirInmersivo = function() {
-        const idArt = typeof articuloActivoId !== 'undefined' ? articuloActivoId : "";
-        const urlActual = window.location.origin + window.location.pathname + (idArt ? "?leer=" + idArt : "");
-        
-        if (navigator.share) {
-            navigator.share({ title: 'Portal Amazonía', url: urlActual }).catch(() => {});
-        } else if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(urlActual).then(() => {
-                alert("¡Enlace copiado al portapapeles!");
+    if (red === 'whatsapp') {
+        var msg = "📰 *" + titulo + "*" + nl + "👉 " + urlArt;
+        window.abrirEnlaceLimpioSinOpener("https://api.whatsapp.com/send?text=" + encodeURIComponent(msg));
+    } else if (red === 'facebook') {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(urlArt).catch(function(){});
+        }
+        window.abrirEnlaceLimpioSinOpener("https://www.facebook.com/sharer/sharer.php?u=" + encodeURIComponent(urlArt));
+    } else if (red === 'copiar') {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(urlArt).then(function() {
+                if (typeof mostrarToast === 'function') mostrarToast("✅ Enlace copiado al portapapeles.");
+                else alert("¡Enlace copiado!");
             });
         } else {
-            prompt("Copia este enlace:", urlActual);
+            prompt("Copia este enlace:", urlArt);
         }
-    };
-    </script>
-    
+    }
+};
+
+window.compartirDesdeTarjetaIndex = function(t, ev) {
+    var idEncontrado = "";
+    try {
+        var origen = (ev && ev.target) ? ev.target : (window.event && window.event.target ? window.event.target : null);
+        var el = origen;
+        while (el && el !== document.body) {
+            var btnLeer = el.querySelector ? el.querySelector('[onclick*="abrirLectura"]') : null;
+            if (btnLeer) {
+                var attr = btnLeer.getAttribute('onclick') || "";
+                var partes = attr.split("'");
+                if (partes.length >= 2) {
+                    idEncontrado = partes[1];
+                    break;
+                }
+            }
+            el = el.parentElement;
+        }
+    } catch (err) {}
+    window.compartirNoticiaPortal('facebook', idEncontrado || "1", t || "");
+};
+
+window.compartirWhatsApp = function() { window.compartirNoticiaPortal('whatsapp'); };
+window.compartirFacebook = function() { window.compartirNoticiaPortal('facebook'); };
+window.compartirWhatsAppModal = function() { window.compartirNoticiaPortal('whatsapp'); };
+window.compartirFacebookModal = function() { window.compartirNoticiaPortal('facebook'); };
+window.copiarEnlaceModal = function() { window.compartirNoticiaPortal('copiar'); };
+window.ejecutarCompartirInmersivo = function() { window.compartirNoticiaPortal('facebook'); };
+
+window.addEventListener('load', function() {
+    var params = new URLSearchParams(window.location.search);
+    var idUrl = params.get('id') || params.get('articulo');
+    if (idUrl && typeof abrirLectura === 'function') {
+        setTimeout(function() {
+            abrirLectura(idUrl);
+        }, 150);
+    }
+});
+</script>
 </body>
 </html>
