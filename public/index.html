@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -8326,6 +8326,9 @@ window.addEventListener('load', function() {
     var params = new URLSearchParams(window.location.search);
     var idUrl = params.get('id') || params.get('articulo');
     if (idUrl && typeof abrirLectura === 'function') {
+        setTimeout(function() { abrirLectura(idUrl); }, 500);
+    }
+    if (idUrl && typeof abrirLectura === 'function') {
         setTimeout(function() {
             abrirLectura(idUrl);
         }, 150);
@@ -8334,3 +8337,4 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
