@@ -7859,6 +7859,11 @@
             memoriaArticulos[id] = fusionado;
             if (data.editado_cms) guardarCache(id, fusionado);
             sincronizarTarjetaDOM(id, fusionado);
+            var _pUrl = new URLSearchParams(window.location.search);
+            var _idSolicitado = _pUrl.get('id') || _pUrl.get('articulo');
+            if (_idSolicitado && String(_idSolicitado) === String(id) && !articuloActivoId && typeof abrirLectura === 'function') {
+                setTimeout(function() { if (!articuloActivoId) abrirLectura(id); }, 100);
+            }
 
             if (articuloActivoId === id) {
                 actualizarBotonesInmersivos(id);
@@ -8337,4 +8342,5 @@ window.addEventListener('load', function() {
 </script>
 </body>
 </html>
+
 
